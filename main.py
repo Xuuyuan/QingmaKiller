@@ -167,6 +167,10 @@ def main():
                     print('# 无法连接到tikuAdapter, 自动跳过本题, 请先启动tikuAdapter再运行本程序! ')
                     time.sleep(random.randint(4,10))
                     continue
+                except Exception as e:
+                    print('# 连接tikuAdapter时发现错误, 自动跳过本题: ', e)
+                    time.sleep(random.randint(4,10))
+                    continue
                 res_tiku = json.loads(req_tiku.text)
                 my_answer = res_tiku['answer']['answerKeyText']
                 if now_question_type == 0 and len(my_answer) > 1: # 避免单选题提交多选
