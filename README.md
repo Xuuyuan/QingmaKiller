@@ -21,11 +21,9 @@
 
 ### 3. **配置本地Python环境**
 请使用Python 3.8+环境运行，相关环境请自行配置。  
-工具所需的软件包已在requirements.txt中注明，或可在终端中依次执行以下指令：
+工具所需的软件包已在requirements.txt中注明，或可在终端中执行以下指令：
     
-    pip install openpyxl
-    pip install pycryptodome
-    pip install requests
+    pip install openpyxl pycryptodome requests bs4
 
 ### 4. **运行程序**
 运行 main.py ，按照提示输入参数即可。  
