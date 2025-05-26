@@ -95,42 +95,64 @@ def main():
         if course_list['isSuccess']:  # 获取成功
             break
         else:
-            print('# 被跳转到授权页面，将在0.5秒后自动重试..')
+            print('# 被跳转到授权页面, 将在0.5秒后自动重试…')
             time.sleep(0.5)
             continue
     if not course_list['isSuccess']:
-        print('# 被跳转到授权页面，请检查URL是否过期! （经测试，正常的链接也有概率跳转到授权页面，可以尝试重复此操作。）')
+        print('# 被跳转到授权页面, 请检查URL是否过期! (经测试, 正常的链接也有概率跳转到授权页面, 可以尝试重复此操作)')
         return
 
     # 科目列表展示
+    allowed_course_ids = []
     print("科目ID | 科目名称")
     for i in course_list['courses'].items():
         print(f"{i[0]} | {i[1]}")
+        allowed_course_ids.append(i[0])
 
     # 选定需要刷题的科目
     subjectId = input('请输入需要刷题的科目ID: ')
     if subjectId == '':
         print('# 未输入科目ID! ')
         return
-    now_times_str = input('请输入当前答题数（不输入默认为0）: ')
-    now_right_times_str = input('请输入当前答对数（不输入默认为0）: ')
+    elif not subjectId.isdigit():
+        print('# 科目ID错误, 请重新输入! ')
+        return
+    elif subjectId not in allowed_course_ids:
+        print('# 科目不在当前开放的范围内, 请重新输入! ')
+        return
+    now_times_str = input('请输入当前的答题数(不输入默认为0): ')
+    now_right_times_str = input('请输入当前的答对数(不输入默认为0): ')
     now_times = int(now_times_str) if now_times_str != '' else 0
     now_right_times = int(
         now_right_times_str) if now_right_times_str != '' else 0
     now_right_rate = now_right_times / now_times if now_times != 0 else 0  # 计算当前正确率
 
-    target_times_str = input(
-        '请输入需要刷到的保底答对次数（保底答对次数=本次运行答对数-当前答对数, 不输入默认为550）: ')
+    target_times_str = input('请输入需要刷到的目标答对次数(不输入默认为550): ')
     target_times = int(target_times_str) if target_times_str != '' else 550
 
-    target_right_rate_str = input('请输入需要刷题的保底正确率（不输入默认为0.6）: ')
-    target_right_rate = float(
-        target_right_rate_str) if target_right_rate_str != '' else 0.6
+    target_right_rate_str = input('请输入需要刷题的保底正确率(不输入默认为0.6): ')
+    target_right_rate = float(target_right_rate_str) if target_right_rate_str != '' else 0.6
 
-    max_right_rate_str = input('请输入需要刷题的上限正确率（不输入默认为0.9）: ')
-    max_right_rate = float(
-        max_right_rate_str) if max_right_rate_str != '' else 0.9
+    max_right_rate_str = input('请输入需要刷题的上限正确率(不输入默认为0.9): ')
+    max_right_rate = float(max_right_rate_str) if max_right_rate_str != '' else 0.9
 
+    # 防呆验证
+    if target_times <= 0 or now_right_times < 0 or now_times < 0:
+        print('# 答题次数不能小于0, 请重新填写! ')
+        return
+    elif target_times < now_right_times:
+        print('# 目标答对次数不能小于当前答对次数, 请重新填写! ')
+        return
+    elif now_times < now_right_times:
+        print('# 当前答题数不能小于当前答对数, 请重新填写! ')
+        return
+    elif target_right_rate >= max_right_rate:
+        print('# 保底正确率不能大于或等于上限正确率, 请重新填写! ')
+        return
+    elif max_right_rate <= 0 or target_right_rate <= 0 or max_right_rate > 1 or target_right_rate > 1:
+        print('# 正确率所允许的区间为: (0, 1], 请重新选择! ')
+        return
+    
     headers = {
         'Referer': f'http://112.5.88.114:31101/yiban-web/stu/toSubject.jhtml?courseId={subjectId}',
         'User-Agent': 'Mozilla/5.0 (Linux; Android 10; HLK-AL00 Build/HONORHLK-AL00; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/78.0.3904.108 Mobile Safari/537.36 yiban_android',
@@ -140,7 +162,7 @@ def main():
         'Host': '112.5.88.114:31101'
     }
 
-    # 载入文件（不存在则进行初始化）
+    # 载入文件(不存在则进行初始化)
     try:
         workbook = openpyxl.load_workbook(f'青马易战_{subjectId}.xlsx')
         sheet = workbook.active
