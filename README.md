@@ -13,7 +13,7 @@
 
 ## 使用方法
 
-请按照以下步骤依次执行。
+**若需要下载发行版本请进入 [Releases](https://github.com/Xuuyuan/QingmaKiller/releases)**，源码运行则请按照以下步骤依次执行。
 
 ### 1. 拉取本仓库至本地
 
