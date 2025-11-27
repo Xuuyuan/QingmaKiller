@@ -79,8 +79,9 @@ headers_tiku = {"content-type": "application/json"}
 
 
 def main():
-    print('====Qingmakiller 青马易战自动答题工具====')
+    print('=== Qingmakiller 青马易战自动答题工具 ===')
     # 获取cookie
+    print('# 提示: 请在易班APP内进入青马易战主界面(有大视频播放的页面), 点击右上角交互按钮, 选择【复制链接】, 将获取到的URL粘贴到下方输入框中。')
     url = input('请输入青马易战URL: ')
     for _ in range(5):
         cookie = get_cookie_from_url(url)
@@ -120,6 +121,8 @@ def main():
     elif subjectId not in allowed_course_ids:
         print('# 科目不在当前开放的范围内, 请重新输入! ')
         return
+    print('# 提示: 请先打开本目录下的tikuAdapter.exe, 以保证搜题功能正常使用。')
+    print('# 提示：若仅需满足课程要求，以下配置项均保持默认(不输入任何内容)即可。')
     now_times_str = input('请输入当前的答题数(不输入默认为0): ')
     now_right_times_str = input('请输入当前的答对数(不输入默认为0): ')
     now_times = int(now_times_str) if now_times_str != '' else 0
