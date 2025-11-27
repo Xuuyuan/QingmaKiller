@@ -15,25 +15,43 @@
 
 请按照以下步骤依次执行。
 
-### 1. **拉取本仓库至本地**
+### 1. 拉取本仓库至本地
 
 在仓库主页面中单击 Code 按钮，根据实际需求选择 Clone 或 Download ZIP（若无二次开发/在 VSCode 等 IDE 中运行的需求时，可以选择 Download ZIP）。
 
-### 2. **运行 tikuAdapter**
+### 2. 运行 tikuAdapter
 
 仓库中已经内置了 tikuAdapter_0.1.0-beta.26 的可执行文件，适用于Windows_amd64，可以直接打开。  
 若需要应用于其它系统，请前往 [tikuAdapter Releases](https://github.com/DokiDoki1103/tikuAdapter/releases) 下载。
 
-### 3. **配置本地Python环境**
+### 3. 配置环境（二选一）
+
+#### 3.1 使用 uv 管理环境
+
+1. **安装 uv** (如果尚未安装) 在终端中执行如下指令:
+   - **Windows 系统**： `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`
+   - **macOS/Linux 系统**： `curl -LsSf https://astral.sh/uv/install.sh | sh`
+   - 使用 pip 安装（若已安装 Python 环境）： `pip install uv`
+
+2. **直接运行**：
+    在项目根目录下打开终端，执行以下指令：
+
+    ```bash
+    uv run main.py
+    ```
+
+#### 3.2 使用 pip 管理环境
 
 请使用 Python 3.8+ 环境运行，相关环境请自行配置。  
-工具所需的软件包已在 requirements.txt 中注明，或可在终端中执行以下指令：
-> pip install openpyxl pycryptodome requests bs4
+工具所需的软件包已在 `pyproject.toml` 中注明，或可在项目根目录下打开终端、执行以下指令：
 
-### 4. **运行程序**
+```bash
+pip install .
+```
 
-运行 main.py ，按照提示输入参数即可。  
-（此处建议通过**在资源管理器的本应用目录中右键单击空白处，选择"在终端中打开"，然后执行指令python main.py**或**类似的能达到在应用目录下运行**的方式运行本程序，以便库中自带的部分题库能够发挥作用。）
+### 4. 运行程序
+
+在项目根目录下打开终端，执行 `python main.py` 运行主程序，按照提示输入参数即可。  
 
 用户URL获取方法：
 

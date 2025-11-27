@@ -1,0 +1,16 @@
+[project]
+name = "QingmaKiller"
+version = "1.0.0"
+description = "青马易战自动答题工具"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+authors = [
+    { name = "Xuuyuan", email = "nexfoun@gmail.com" }
+]
+dependencies = [
+    "openpyxl>=3.1.5",
+    "pycryptodome>=3.21.0",
+    "requests>=2.32.3",
+    "beautifulsoup4>=4.12.3",
+]
