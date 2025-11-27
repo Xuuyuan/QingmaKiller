@@ -21,7 +21,7 @@
 
 ### 2. 运行 tikuAdapter
 
-仓库中已经内置了 tikuAdapter_0.1.0-beta.26 的可执行文件，适用于Windows_amd64，可以直接打开。  
+仓库中已经内置了 tikuAdapter_0.1.0-beta.39 的可执行文件，适用于Windows_amd64，可以直接打开。  
 若需要应用于其它系统，请前往 [tikuAdapter Releases](https://github.com/DokiDoki1103/tikuAdapter/releases) 下载。
 
 ### 3. 配置环境（二选一）
