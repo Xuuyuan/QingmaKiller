@@ -7,6 +7,8 @@ import openpyxl
 import random
 import base64
 import re
+import sys
+import os
 from bs4 import BeautifulSoup
 
 header_login = {
@@ -19,6 +21,14 @@ header_login = {
     'User-Agent': 'Mozilla/5.0 (Linux; Android 10; HLK-AL00 Build/HONORHLK-AL00; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/78.0.3904.108 Mobile Safari/537.36 yiban_android',
 }
 
+# 路径修正
+if getattr(sys, 'frozen', False):
+    application_path = os.path.dirname(sys.executable)
+else:
+    application_path = os.path.dirname(os.path.abspath(__file__))
+
+os.chdir(application_path)
+print(f'# 当前工作目录已锁定至: {application_path}')
 
 def text_format(text):  # 清除不必要的字符 将unicode文本格式化为字符串以便于搜题
     text = str(text.replace('\u3000', '').replace('\xa0', ''))
