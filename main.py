@@ -15,7 +15,7 @@ header_login = {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
     'Accept-Encoding': 'gzip, deflate',
     'Accept-Language': 'zh-CN,zh;q=0.9',
-    'Host': '112.5.88.114:31101',
+    'Host': 'sdyb.fjhdrs.com',
     'Proxy-Connection': 'keep-alive',
     'Upgrade-Insecure-Requests': '1',
     'User-Agent': 'Mozilla/5.0 (Linux; Android 10; HLK-AL00 Build/HONORHLK-AL00; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/78.0.3904.108 Mobile Safari/537.36 yiban_android',
@@ -54,15 +54,15 @@ def decrypt(text):  # 解密青马易战文本 返回值类型为unicode文本
 
 def get_course_list(cookie) -> dict:  # 获取课程列表
     headers = {
-        'Referer': f'http://112.5.88.114:31101/yiban-web/stu/toCourse.jhtml',
+        'Referer': f'http://sdyb.fjhdrs.com/yiban-web/stu/toCourse.jhtml',
         'User-Agent': 'Mozilla/5.0 (Linux; Android 10; HLK-AL00 Build/HONORHLK-AL00; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/78.0.3904.108 Mobile Safari/537.36 yiban_android',
         'Cookie': cookie,
         'Accept': 'application/json',
-        'Origin': 'http://112.5.88.114:31101',
-        'Host': '112.5.88.114:31101'
+        'Origin': 'http://sdyb.fjhdrs.com',
+        'Host': 'sdyb.fjhdrs.com'
     }
 
-    response = requests.get("http://112.5.88.114:31101/yiban-web/stu/toCourse.jhtml",
+    response = requests.get("http://sdyb.fjhdrs.com/yiban-web/stu/toCourse.jhtml",
                             data="", headers=headers, allow_redirects=False)
     if response.status_code == 302:
         # print(response.headers['Location'])
@@ -167,12 +167,12 @@ def main():
         return
     
     headers = {
-        'Referer': f'http://112.5.88.114:31101/yiban-web/stu/toSubject.jhtml?courseId={subjectId}',
+        'Referer': f'http://sdyb.fjhdrs.com/yiban-web/stu/toSubject.jhtml?courseId={subjectId}',
         'User-Agent': 'Mozilla/5.0 (Linux; Android 10; HLK-AL00 Build/HONORHLK-AL00; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/78.0.3904.108 Mobile Safari/537.36 yiban_android',
         'Cookie': cookie,
         'Accept': 'application/json',
-        'Origin': 'http://112.5.88.114:31101',
-        'Host': '112.5.88.114:31101'
+        'Origin': 'http://sdyb.fjhdrs.com',
+        'Host': 'sdyb.fjhdrs.com'
     }
 
     # 载入文件(不存在则进行初始化)
@@ -198,7 +198,7 @@ def main():
     while now_right_times <= target_times or now_right_rate < target_right_rate:  # 循环条件
         # 获取题目及选项
         req = requests.post(
-            f'http://112.5.88.114:31101/yiban-web/stu/nextSubject.jhtml?_={gettime()}', headers=headers, data={'courseId': subjectId})
+            f'http://sdyb.fjhdrs.com/yiban-web/stu/nextSubject.jhtml?_={gettime()}', headers=headers, data={'courseId': subjectId})
         # TODO
         if 'document.location=\'/host_not_found_error\'' in req.text:
             print('# 该URL已过期, 请根据指引重新获取URL! ')
@@ -294,7 +294,7 @@ def main():
         data_submit = {'answer': my_answer,
                        'courseId': subjectId, 'uuid': UUID, 'deviceUuid': ""}
         req_submit = requests.post(
-            f'http://112.5.88.114:31101/yiban-web/stu/changeSituation.jhtml?_={gettime()}', headers=headers, data=data_submit)
+            f'http://sdyb.fjhdrs.com/yiban-web/stu/changeSituation.jhtml?_={gettime()}', headers=headers, data=data_submit)
         res_submit = json.loads(req_submit.text)
 
         if res_submit['message'] == '回答正确！':  # 回答正确
