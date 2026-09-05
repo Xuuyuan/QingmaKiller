@@ -4,6 +4,9 @@
 base_host = 'sdyb.fjhdrs.com'
 base_url = f'http://{base_host}'
 
+# 易班OAuth授权页域名(未认证会话会被302到该页, 用于会话失效检测)
+oauth_host = 'https://oauth.yiban.cn'
+
 user_agent = 'Mozilla/5.0 (Linux; Android 10; HLK-AL00 Build/HONORHLK-AL00; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/78.0.3904.108 Mobile Safari/537.36 yiban_android'
 
 # 选项表

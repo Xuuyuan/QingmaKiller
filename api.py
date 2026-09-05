@@ -1,24 +1,13 @@
-"""青马易战站点 HTTP 接口: 获取cookie、课程列表、取题与提交答案"""
+"""青马易战站点 HTTP 接口: 获取课程列表、取题与提交答案"""
 import json
 import re
 
 import requests
 from bs4 import BeautifulSoup
 
-from config import base_host, base_url, options_list, user_agent
+from config import base_host, base_url, oauth_host, options_list, user_agent
 from logger import logger
 from utils import decrypt, gettime, text_format
-
-header_login = {
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-    'Accept-Encoding': 'gzip, deflate',
-    'Accept-Language': 'zh-CN,zh;q=0.9',
-    'Host': base_host,
-    'Proxy-Connection': 'keep-alive',
-    'Upgrade-Insecure-Requests': '1',
-    'User-Agent': user_agent,
-}
-
 
 def build_headers(cookie, referer):  # 站点JSON接口的通用请求头
     return {
@@ -47,10 +36,10 @@ def get_course_list(cookie) -> dict:  # 获取课程列表
     return {"isSuccess": True, "courses": courses}
 
 
-def get_cookie_from_url(url):
-    res = requests.get(url, headers=header_login)
-    cookie = re.match(r'JSESSIONID=\w*', res.headers['set-cookie']).group()
-    return cookie
+def _parse_site_json(response, action):  # 解析站点JSON响应, 会话失效被跳转到授权页时给出明确错误
+    if oauth_host in response.url or response.text.strip().startswith('<'):
+        raise RuntimeError(f'{action}时站点会话已失效, 请重新运行程序完成认证! ')
+    return json.loads(response.text)
 
 
 def fetch_question(headers, subject_id) -> dict:  # 获取下一题并解密, 返回字段化的字典, 失败时返回None
@@ -60,7 +49,7 @@ def fetch_question(headers, subject_id) -> dict:  # 获取下一题并解密, �
     if 'document.location=\'/host_not_found_error\'' in req.text:
         logger.error('该URL已过期, 请根据指引重新获取URL! ')
         return None
-    html = json.loads(req.text)
+    html = _parse_site_json(req, '获取题目')
     if 'uuid' not in html['data']:
         logger.error(f'题目获取失败! 返回信息: {html}')
         return None
@@ -86,4 +75,4 @@ def submit_answer(headers, subject_id, uuid, answer):  # 提交答案, 返回响
                    'courseId': subject_id, 'uuid': uuid, 'deviceUuid': ""}
     req_submit = requests.post(
         f'{base_url}/yiban-web/stu/changeSituation.jhtml?_={gettime()}', headers=headers, data=data_submit)
-    return json.loads(req_submit.text)
+    return _parse_site_json(req_submit, '提交答案')

@@ -2,7 +2,8 @@ import os
 import random
 import time
 
-from api import build_headers, fetch_question, get_cookie_from_url, get_course_list, submit_answer
+from api import build_headers, fetch_question, get_course_list, submit_answer
+from auth import clear_saved_session, handshake_from_url, load_saved_session, save_session
 from bank import QuestionBank
 from cli import collect_config, select_subject
 from config import base_url, options_list
@@ -18,30 +19,55 @@ os.chdir(application_path)
 logger.info(f'当前工作目录已锁定至: {application_path}')
 
 
+def validate_cookie(cookie, retries=3):  # 以课程列表校验会话有效性, 失败返回None
+    for attempt in range(retries):
+        course_list = get_course_list(cookie)
+        if course_list['isSuccess']:
+            return course_list
+        if attempt < retries - 1:
+            logger.warning(f'会话校验未通过, 将在1秒后重试({attempt + 2}/{retries})…')
+            time.sleep(1)
+    return None
+
+
+def login_by_url():  # 通过APP复制的URL认证, 直到成功为止
+    while True:
+        url = input('请输入青马易战URL: ').strip()
+        if url == '':
+            logger.error('未输入URL! 请在易班APP内进入青马易战主界面, 点击右上角交互按钮选择【复制链接】。')
+            continue
+        cookie, reason = handshake_from_url(url)
+        if cookie is None:
+            logger.error(f'URL认证失败: {reason}! 请在易班APP内重新复制最新链接后重试。')
+            continue
+        course_list = validate_cookie(cookie)
+        if course_list is None:
+            logger.warning('URL握手成功但会话校验未通过, 请重新复制URL后重试')
+            continue
+        logger.success(f'获取到cookie: {cookie}')
+        save_session(cookie)
+        return cookie, course_list
+
+
+def acquire_session():  # 会话获取链路: 本地持久化会话 → URL握手, 永不返回None
+    saved = load_saved_session()
+    if saved:
+        logger.info('检测到本地保存的会话, 正在验证…')
+        course_list = validate_cookie(saved)
+        if course_list is not None:
+            logger.success(f'本地会话有效, 已跳过认证: {saved}')
+            return saved, course_list
+        clear_saved_session()
+        logger.warning('本地会话已失效, 需要重新认证')
+
+    logger.info('提示: 请在易班APP内进入青马易战主界面(有大视频播放的页面), 点击右上角交互按钮, 选择【复制链接】, 将获取到的URL粘贴到下方输入框中。')
+    logger.info('提示: 认证成功后会话会缓存到本地, 有效期内再次运行无需重新输入URL。')
+    return login_by_url()
+
+
 def main():
     logger.info('=== Qingmakiller 青马易战自动答题工具 ===')
-    # 获取cookie
-    logger.info('提示: 请在易班APP内进入青马易战主界面(有大视频播放的页面), 点击右上角交互按钮, 选择【复制链接】, 将获取到的URL粘贴到下方输入框中。')
-    url = input('请输入青马易战URL: ')
-    for _ in range(5):
-        cookie = get_cookie_from_url(url)
-        if cookie:
-            logger.success(f'获取到cookie: {cookie}')
-        else:
-            logger.error('获取cookie失败! ')
-            return
-
-        # 获取课程列表
-        course_list = get_course_list(cookie)
-        if course_list['isSuccess']:  # 获取成功
-            break
-        else:
-            logger.warning('被跳转到授权页面, 将在0.5秒后自动重试…')
-            time.sleep(0.5)
-            continue
-    if not course_list['isSuccess']:
-        logger.error('被跳转到授权页面, 请检查URL是否过期! (经测试, 正常的链接也有概率跳转到授权页面, 可以尝试重复此操作)')
-        return
+    cookie, course_list = acquire_session()
 
     # 选定需要刷题的科目
     subjectId = select_subject(course_list['courses'])
