@@ -21,7 +21,7 @@
 
 ## 使用方法
 
-**若需要下载发行版本请进入 [Releases](https://github.com/Xuuyuan/QingmaKiller/releases)**，源码运行则请按照以下步骤依次执行。
+**若需要下载发行版本请进入 [Releases](https://github.com/Xuuyuan/QingmaKiller/releases)**，压缩包内含主程序 `QingmaKiller.exe`、搜题服务 `tikuAdapter.exe` 与本地题库 `tiku.json`，解压后双击 `QingmaKiller.exe` 即可使用，无需配置 Python 环境。源码运行则请按照以下步骤依次执行。
 
 ### 1. 拉取本仓库至本地
 
