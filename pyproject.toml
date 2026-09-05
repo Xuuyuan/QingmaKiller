@@ -13,4 +13,5 @@ dependencies = [
     "pycryptodome>=3.21.0",
     "requests>=2.32.3",
     "beautifulsoup4>=4.12.3",
+    "loguru>=0.7.2",
 ]

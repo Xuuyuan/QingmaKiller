@@ -11,6 +11,8 @@ import sys
 import os
 from bs4 import BeautifulSoup
 
+from logger import logger
+
 header_login = {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
     'Accept-Encoding': 'gzip, deflate',
@@ -28,7 +30,7 @@ else:
     application_path = os.path.dirname(os.path.abspath(__file__))
 
 os.chdir(application_path)
-print(f'# 当前工作目录已锁定至: {application_path}')
+logger.info(f'当前工作目录已锁定至: {application_path}')
 
 def text_format(text):  # 清除不必要的字符 将unicode文本格式化为字符串以便于搜题
     text = str(text.replace('\u3000', '').replace('\xa0', ''))
@@ -89,16 +91,16 @@ headers_tiku = {"content-type": "application/json"}
 
 
 def main():
-    print('=== Qingmakiller 青马易战自动答题工具 ===')
+    logger.info('=== Qingmakiller 青马易战自动答题工具 ===')
     # 获取cookie
-    print('# 提示: 请在易班APP内进入青马易战主界面(有大视频播放的页面), 点击右上角交互按钮, 选择【复制链接】, 将获取到的URL粘贴到下方输入框中。')
+    logger.info('提示: 请在易班APP内进入青马易战主界面(有大视频播放的页面), 点击右上角交互按钮, 选择【复制链接】, 将获取到的URL粘贴到下方输入框中。')
     url = input('请输入青马易战URL: ')
     for _ in range(5):
         cookie = get_cookie_from_url(url)
         if cookie:
-            print('# 获取到cookie: ' + cookie)
+            logger.success(f'获取到cookie: {cookie}')
         else:
-            print('# 获取cookie失败! ')
+            logger.error('获取cookie失败! ')
             return
 
         # 获取课程列表
@@ -106,33 +108,33 @@ def main():
         if course_list['isSuccess']:  # 获取成功
             break
         else:
-            print('# 被跳转到授权页面, 将在0.5秒后自动重试…')
+            logger.warning('被跳转到授权页面, 将在0.5秒后自动重试…')
             time.sleep(0.5)
             continue
     if not course_list['isSuccess']:
-        print('# 被跳转到授权页面, 请检查URL是否过期! (经测试, 正常的链接也有概率跳转到授权页面, 可以尝试重复此操作)')
+        logger.error('被跳转到授权页面, 请检查URL是否过期! (经测试, 正常的链接也有概率跳转到授权页面, 可以尝试重复此操作)')
         return
 
     # 科目列表展示
     allowed_course_ids = []
-    print("科目ID | 科目名称")
+    logger.info('科目ID | 科目名称')
     for i in course_list['courses'].items():
-        print(f"{i[0]} | {i[1]}")
+        logger.info(f'{i[0]} | {i[1]}')
         allowed_course_ids.append(i[0])
 
     # 选定需要刷题的科目
     subjectId = input('请输入需要刷题的科目ID: ')
     if subjectId == '':
-        print('# 未输入科目ID! ')
+        logger.error('未输入科目ID! ')
         return
     elif not subjectId.isdigit():
-        print('# 科目ID错误, 请重新输入! ')
+        logger.error('科目ID错误, 请重新输入! ')
         return
     elif subjectId not in allowed_course_ids:
-        print('# 科目不在当前开放的范围内, 请重新输入! ')
+        logger.error('科目不在当前开放的范围内, 请重新输入! ')
         return
-    print('# 提示: 请先打开本目录下的tikuAdapter.exe, 以保证搜题功能正常使用。')
-    print('# 提示：若仅需满足课程要求，以下配置项均保持默认(不输入任何内容)即可。')
+    logger.info('提示: 请先打开本目录下的tikuAdapter.exe, 以保证搜题功能正常使用。')
+    logger.info('提示：若仅需满足课程要求，以下配置项均保持默认(不输入任何内容)即可。')
     now_times_str = input('请输入当前的答题数(不输入默认为0): ')
     now_right_times_str = input('请输入当前的答对数(不输入默认为0): ')
     now_times = int(now_times_str) if now_times_str != '' else 0
@@ -151,21 +153,21 @@ def main():
 
     # 防呆验证
     if target_times <= 0 or now_right_times < 0 or now_times < 0:
-        print('# 答题次数不能小于0, 请重新填写! ')
+        logger.error('答题次数不能小于0, 请重新填写! ')
         return
     elif target_times < now_right_times:
-        print('# 目标答对次数不能小于当前答对次数, 请重新填写! ')
+        logger.error('目标答对次数不能小于当前答对次数, 请重新填写! ')
         return
     elif now_times < now_right_times:
-        print('# 当前答题数不能小于当前答对数, 请重新填写! ')
+        logger.error('当前答题数不能小于当前答对数, 请重新填写! ')
         return
     elif target_right_rate >= max_right_rate:
-        print('# 保底正确率不能大于或等于上限正确率, 请重新填写! ')
+        logger.error('保底正确率不能大于或等于上限正确率, 请重新填写! ')
         return
     elif max_right_rate <= 0 or target_right_rate <= 0 or max_right_rate > 1 or target_right_rate > 1:
-        print('# 正确率所允许的区间为: (0, 1], 请重新选择! ')
+        logger.error('正确率所允许的区间为: (0, 1], 请重新选择! ')
         return
-    
+
     headers = {
         'Referer': f'http://sdyb.fjhdrs.com/yiban-web/stu/toSubject.jhtml?courseId={subjectId}',
         'User-Agent': 'Mozilla/5.0 (Linux; Android 10; HLK-AL00 Build/HONORHLK-AL00; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/78.0.3904.108 Mobile Safari/537.36 yiban_android',
@@ -201,11 +203,11 @@ def main():
             f'http://sdyb.fjhdrs.com/yiban-web/stu/nextSubject.jhtml?_={gettime()}', headers=headers, data={'courseId': subjectId})
         # TODO
         if 'document.location=\'/host_not_found_error\'' in req.text:
-            print('# 该URL已过期, 请根据指引重新获取URL! ')
+            logger.error('该URL已过期, 请根据指引重新获取URL! ')
             break
         html = json.loads(req.text)
         if 'uuid' not in html['data']:
-            print('# 题目获取失败! 返回信息: ', html)
+            logger.error(f'题目获取失败! 返回信息: {html}')
             break
         UUID = html['data']['uuid']
         now_question = text_format(
@@ -216,24 +218,22 @@ def main():
             html['data']['nextSubject']['optionCount']) if f'option{i}' in html['data']['nextSubject']]
         text_options = ' '.join(
             options_list[i] + '. ' + options[i] + ' ' for i in range(len(options)))
-        print(f'{now_right_times}->{target_times}',
-              decrypt(html['data']['nextSubject']['subDescript']), text_options)
+        logger.info(f'{now_right_times}->{target_times} '
+                    f'{decrypt(html["data"]["nextSubject"]["subDescript"])} {text_options}')
         # 检测刷题题目
         if '刷题' in now_question or '请选择' in now_question:
-            print('# 检测到防刷题题目, 自动跳过')
+            logger.warning('检测到防刷题题目, 自动跳过')
             continue
         if now_question in questions:  # 题目已存在本地题库
             if now_right_rate > max_right_rate:  # 正确率过高
-                print('# 该题目已存在本地题库中/正确率过高!  正确答案为 ' +
-                      questions[now_question] + ', 将自动提交随机答案! ')
+                logger.warning(f'该题目已存在本地题库中/正确率过高!  正确答案为 {questions[now_question]}, 将自动提交随机答案! ')
                 if now_question_type == 0:
                     my_answer = options_list[random.randint(0, len(options)-1)]
                 else:
                     my_answer = ''.join(random.sample(
                         options_list[:len(options)], 2))
             else:
-                print('# 该题目已存在本地题库中!  正确答案为 ' +
-                      questions[now_question] + ', 将自动提交! ')
+                logger.info(f'该题目已存在本地题库中!  正确答案为 {questions[now_question]}, 将自动提交! ')
                 my_answer = questions[now_question]
         else:  # 题目不存在本地题库中, 尝试从网络题库获取
             # my_answer = ''
@@ -249,18 +249,18 @@ def main():
                 else:  # 多选题
                     my_answer = ''.join(random.sample(
                         options_list[:len(options)], 2))
-                print('# 正确率过高, 将自动提交随机答案! ')
+                logger.warning('正确率过高, 将自动提交随机答案! ')
                 force_choose = True
             elif not force_choose:
                 try:
                     req_tiku = requests.post('http://localhost:8060/adapter-service/search', json={
                                              "question": now_question, "type": now_question_type, "options": options}, headers=headers_tiku)
                 except requests.exceptions.ConnectionError:
-                    print('# 无法连接到tikuAdapter, 自动跳过本题, 请先启动tikuAdapter再运行本程序! ')
+                    logger.error('无法连接到tikuAdapter, 自动跳过本题, 请先启动tikuAdapter再运行本程序! ')
                     time.sleep(random.randint(4, 10))
                     continue
                 except Exception as e:
-                    print('# 连接tikuAdapter时发现错误, 自动跳过本题: ', e)
+                    logger.error(f'连接tikuAdapter时发现错误, 自动跳过本题: {e}')
                     time.sleep(random.randint(4, 10))
                     continue
                 res_tiku = json.loads(req_tiku.text)
@@ -273,7 +273,7 @@ def main():
 
                 if now_question_type == 1:  # 多选题去重
                     my_answer = ''.join(set(my_answer))
-                print('# 网络题库搜索结果: ' + my_answer)
+                logger.info(f'网络题库搜索结果: {my_answer}')
             if my_answer == '':  # 网络题库未找到答案
                 if now_right_rate > max_right_rate:  # 正确率高于保底正确率, 随机提交
                     if now_question_type == 0:
@@ -284,7 +284,7 @@ def main():
                             options_list[:len(options)], 2))
                     time.sleep(1)
                 else:
-                    print('# 网络题库未找到答案, 本题跳过! ')
+                    logger.warning('网络题库未找到答案, 本题跳过! ')
                     time.sleep(3)
                     continue
         # 随机休眠, 防止检测
@@ -307,8 +307,8 @@ def main():
                 sheet.append(data_list)
                 workbook.save(f'青马易战_{subjectId}.xlsx')
                 questions[now_question] = my_answer
-            print(
-                f'# 本题回答正确!  当前提交次数 {run_times} 目标答对数 {target_times} 现答对数 {now_right_times} 现答题数 {now_times} 正确率 {now_right_rate * 100:.2f}%/{target_right_rate * 100}%')
+            logger.success(
+                f'本题回答正确!  当前提交次数 {run_times} 目标答对数 {target_times} 现答对数 {now_right_times} 现答题数 {now_times} 正确率 {now_right_rate * 100:.2f}%/{target_right_rate * 100}%')
         elif res_submit['message'] == '回答错误！':  # 回答错误
             run_times += 1
             now_times += 1
@@ -324,19 +324,19 @@ def main():
                 sheet.append(data_list)
                 workbook.save(f'青马易战_{subjectId}.xlsx')
 
-            print(f'# 本题回答错误!  提交答案: {my_answer} 正确答案: {rightAnswer} 当前提交次数 {run_times}/{target_times} 现答对数 {now_right_times} 现答题数 {now_times} 正确率 {now_right_rate * 100:.2f}%/{target_right_rate * 100}%')
+            logger.info(f'本题回答错误!  提交答案: {my_answer} 正确答案: {rightAnswer} 当前提交次数 {run_times}/{target_times} 现答对数 {now_right_times} 现答题数 {now_times} 正确率 {now_right_rate * 100:.2f}%/{target_right_rate * 100}%')
         elif res_submit['message'] == '您的答题速度过快，请认真答题，30s后可继续答题.':  # 触发答题冷却
-            print('# 触发答题冷却, 等待30s后自动继续..')
+            logger.warning('触发答题冷却, 等待30s后自动继续..')
             time.sleep(30)
         else:  # 发现错误, 等待手动处理
-            print(f'# 发现未知回复文本: {res_submit}')
+            logger.error(f'发现未知回复文本: {res_submit}')
             input()
-    print('# 运行完毕。')
+    logger.success('运行完毕。')
 
 
 if __name__ == '__main__':
     while True:
         try:
             main()
-        except Exception as e:
-            print('# 发现错误: ', e)
+        except Exception:
+            logger.exception('发现错误')
