@@ -3,6 +3,7 @@ __pycache__/
 session.json
 build/
 dist/
+*.spec
 tiku.db
 tiku.json.tmp
 tiku.json.broken
