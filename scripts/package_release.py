@@ -70,13 +70,12 @@ def write_release_notes(version):  # 生成 Release 说明: 静态模板 + 自�
     print(f'已生成 Release 说明: {notes_path}')
 
 
-def make_zip(version):  # 组装发布 zip: 主程序 + tikuAdapter + 题库 + 许可证 + 使用说明
+def make_zip(version):  # 组装发布 zip: 主程序 + tikuAdapter + 题库 + 许可证
     bundle_files = [
         (DIST / 'QingmaKiller.exe', 'QingmaKiller.exe'),
         (ROOT / 'tikuAdapter.exe', 'tikuAdapter.exe'),
         (ROOT / 'tiku.json', 'tiku.json'),
         (ROOT / 'LICENSE', 'LICENSE'),
-        (ROOT / 'scripts' / 'USAGE.txt', '使用说明.txt'),
     ]
     missing = [str(src) for src, _ in bundle_files if not src.is_file()]
     if missing:
