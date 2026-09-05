@@ -41,13 +41,23 @@ def previous_tag():  # 当前提交的上一枚发行 tag, 用于生成变更日
     return proc.stdout.strip() if proc.returncode == 0 else None
 
 
-def write_release_notes(version):  # 生成 Release 说明: 静态模板 + 自上一 tag 以来的提交记录
-    tag = previous_tag()
-    changelog = ''
-    if tag:
-        proc = subprocess.run(['git', 'log', '--no-decorate', f'{tag}..HEAD'], capture_output=True, text=True, cwd=ROOT)
-        changelog = '\n'.join(f'- {line.strip()}' for line in proc.stdout.splitlines() if line.strip())
-    body = f'''## 青马易战自动答题工具 QingmaKiller v{version}
+def user_facing_commits(tag):  # 自上一tag以来的提交标题, 排除纯工程类提交(build/docs/test/ci)
+    proc = subprocess.run(['git', 'log', '--pretty=format:%s', f'{tag}..HEAD'], capture_output=True, text=True, cwd=ROOT)
+    skip_prefixes = ('build:', 'docs:', 'test:', 'ci:')
+    return [line.strip() for line in proc.stdout.splitlines()
+            if line.strip() and not line.strip().startswith(skip_prefixes)]
+
+
+def write_release_notes(version):  # 生成 Release 说明: 仓库根目录存在RELEASE_NOTES.md时直接采用(发版前随版本号一并更新), 否则由模板+提交记录生成
+    override_path = ROOT / 'RELEASE_NOTES.md'
+    if override_path.is_file():
+        body = override_path.read_text(encoding='utf-8')
+        if f'v{version}' not in body:
+            print(f'警告: RELEASE_NOTES.md 未提及 v{version}, 可能是未随版本更新的旧文案! ')
+    else:
+        tag = previous_tag()
+        changelog = '\n'.join(f'- {line}' for line in user_facing_commits(tag)) if tag else ''
+        body = f'''## 青马易战自动答题工具 QingmaKiller v{version}
 
 **本工具仅供学习交流使用。**
 
