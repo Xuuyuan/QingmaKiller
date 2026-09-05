@@ -4,6 +4,7 @@ session.json
 build/
 dist/
 *.spec
+*.egg-info/
 tiku.db
 tiku.json.tmp
 tiku.json.broken
