@@ -61,14 +61,16 @@ def handshake_from_url(url):  # 通过APP复制的URL建立会话, 返回 (cooki
     return cookie, None
 
 
-def load_saved_session():  # 读取本地持久化会话, 无效返回None
+def load_saved_session():  # 读取本地持久化会话, 返回 (jsessionid, 保存时间戳), 无效返回None
     if not os.path.exists(session_file):
         return None
     try:
         with open(session_file, 'r', encoding='utf-8') as fp:
-            jsessionid = json.load(fp).get('jsessionid')
+            data = json.load(fp)
+        jsessionid = data.get('jsessionid')
         if jsessionid and re.match(r'^JSESSIONID=\w+$', jsessionid):
-            return jsessionid
+            saved_at = data.get('saved_at')
+            return jsessionid, (saved_at if isinstance(saved_at, int) else None)
     except (OSError, ValueError):
         pass
     return None

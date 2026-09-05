@@ -55,17 +55,46 @@ def login_by_url():  # 通过APP复制的URL认证, 直到成功为止
         return cookie, course_list
 
 
+session_confirmed = False  # 本进程是否已让用户确认过沿用或切换会话, 避免多轮刷题时反复询问
+
+
+def _format_saved_time(saved_at):  # 会话缓存时间的展示文本, 旧版会话文件缺失时间戳时兜底
+    if saved_at is None:
+        return '未知时间'
+    return time.strftime('%Y-%m-%d %H:%M', time.localtime(saved_at))
+
+
+def _ask_use_saved_session(saved_at):  # 本地会话有效时确认沿用或切换其它账号, 选择沿用返回True
+    while True:
+        choice = input(f'检测到本地会话({_format_saved_time(saved_at)})。回车继续使用该会话, 输入 y 并回车切换其它账号: ').strip().lower()
+        if choice == '':
+            return True
+        if choice == 'y':
+            return False
+        logger.error('输入无效! 请直接回车继续, 或输入 y 切换其它账号。')
+
+
 def acquire_session():  # 会话获取链路: 本地持久化会话 → URL握手, 永不返回None
+    global session_confirmed
     saved = load_saved_session()
     if saved:
+        jsessionid, saved_at = saved
         logger.info('检测到本地保存的会话, 正在验证…')
-        course_list = validate_cookie(saved)
+        course_list = validate_cookie(jsessionid)
         if course_list is not None:
-            logger.success(f'本地会话有效, 已跳过认证: {saved}')
-            return saved, course_list
-        clear_saved_session()
-        logger.warning('本地会话已失效, 需要重新认证')
+            if session_confirmed:  # 本进程已确认过沿用/切换, 后续轮次静默复用有效会话
+                logger.success(f'本地会话有效, 已跳过认证: {jsessionid}')
+                return jsessionid, course_list
+            session_confirmed = True
+            if _ask_use_saved_session(saved_at):
+                logger.success(f'本地会话有效, 已跳过认证: {jsessionid}')
+                return jsessionid, course_list
+            logger.info('已选择切换账号, 请重新完成URL认证')
+        else:
+            clear_saved_session()
+            logger.warning('本地会话已失效, 需要重新认证')
 
+    session_confirmed = True  # 本进程走一次完整URL认证后同样不再询问
     logger.info('提示: 请在易班APP内进入青马易战主界面(有大视频播放的页面), 点击右上角交互按钮, 选择【复制链接】, 将获取到的URL粘贴到下方输入框中。')
     logger.info('提示: 认证成功后会话会缓存到本地, 有效期内再次运行无需重新输入URL。')
     return login_by_url()

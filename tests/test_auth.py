@@ -51,9 +51,21 @@ class SessionPersistenceTest(unittest.TestCase):
     def test_round_trip(self):
         self.assertIsNone(auth.load_saved_session())
         auth.save_session('JSESSIONID=ABC123')
-        self.assertEqual(auth.load_saved_session(), 'JSESSIONID=ABC123')
+        jsessionid, saved_at = auth.load_saved_session()
+        self.assertEqual(jsessionid, 'JSESSIONID=ABC123')
+        self.assertIsInstance(saved_at, int)
         auth.clear_saved_session()
         self.assertIsNone(auth.load_saved_session())
+
+    def test_legacy_file_without_saved_at(self):
+        with open(auth.session_file, 'w', encoding='utf-8') as fp:
+            json.dump({'jsessionid': 'JSESSIONID=ABC123'}, fp)
+        self.assertEqual(auth.load_saved_session(), ('JSESSIONID=ABC123', None))
+
+    def test_non_integer_saved_at_ignored(self):
+        with open(auth.session_file, 'w', encoding='utf-8') as fp:
+            json.dump({'jsessionid': 'JSESSIONID=ABC123', 'saved_at': 'yesterday'}, fp)
+        self.assertEqual(auth.load_saved_session(), ('JSESSIONID=ABC123', None))
 
     def test_corrupted_file_returns_none(self):
         with open(auth.session_file, 'w', encoding='utf-8') as fp:
