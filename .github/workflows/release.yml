@@ -9,6 +9,9 @@ on:
 permissions:
   contents: write
 
+env:
+  PYTHONUTF8: '1'  # Windows runner 默认 cp1252, 中文输出会触发 UnicodeEncodeError
+
 jobs:
   release:
     runs-on: windows-latest
