@@ -14,7 +14,8 @@ options_list = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
 options_dict = {'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6}
 
 # tikuAdapter 本地搜题服务
-tiku_adapter_url = 'http://localhost:8060/adapter-service/search'
+tiku_adapter_base = 'http://localhost:8060'
+tiku_adapter_url = f'{tiku_adapter_base}/adapter-service/search'
 headers_tiku = {"content-type": "application/json"}
 
 # decrypt 使用的固定密钥(由青马易战网页的js中获取, 有被修改的可能性)
