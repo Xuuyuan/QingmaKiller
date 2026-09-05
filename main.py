@@ -13,6 +13,7 @@ from paths import get_app_dir
 from solver import decide_answer
 from tiku import adapter_alive
 from utils import decrypt
+from winproc import bind_to_parent
 
 # 路径修正
 application_path = get_app_dir()
@@ -122,6 +123,8 @@ def ensure_tiku_adapter():  # 探测本地搜题服务, 未运行时尝试自动
     except OSError as exc:
         logger.warning(f'tikuAdapter 自动启动失败({exc}), 本地题库未命中的题目将被跳过! 可手动启动后重试。')
         return
+    if not bind_to_parent(tiku_adapter_process):
+        logger.warning('tikuAdapter 进程守护绑定失败, 直接关闭本程序窗口时可能残留 tikuAdapter 进程! ')
     for _ in range(15):  # 最多等待15秒直到搜题服务就绪
         if adapter_alive():
             logger.info('搜题服务已启动')
