@@ -5,8 +5,9 @@
     pip install . pyinstaller
     python scripts/package_release.py
 
-产物位于 dist/: QingmaKiller_v{版本号}.zip 与 release_notes.md
+产物位于 dist/: QingmaKiller_v{版本号}.zip、release_notes.md 以及一套可直接运行的程序文件
 """
+import shutil
 import subprocess
 import sys
 import zipfile
@@ -70,7 +71,7 @@ def write_release_notes(version):  # 生成 Release 说明: 静态模板 + 自�
     print(f'已生成 Release 说明: {notes_path}')
 
 
-def make_zip(version):  # 组装发布 zip: 主程序 + tikuAdapter + 题库 + 许可证
+def make_zip(version):  # 组装发行文件: dist目录内铺开一套可直接运行的文件, 并压缩为发布 zip
     bundle_files = [
         (DIST / 'QingmaKiller.exe', 'QingmaKiller.exe'),
         (ROOT / 'tikuAdapter.exe', 'tikuAdapter.exe'),
@@ -80,10 +81,19 @@ def make_zip(version):  # 组装发布 zip: 主程序 + tikuAdapter + 题库 + �
     missing = [str(src) for src, _ in bundle_files if not src.is_file()]
     if missing:
         sys.exit(f'缺少发行文件: {", ".join(missing)}')
+    for src, arcname in bundle_files:  # dist内铺开, 便于直接运行dist中的主程序验收
+        if src != DIST / arcname:
+            try:
+                shutil.copy2(src, DIST / arcname)
+            except OSError as exc:
+                sys.exit(f'复制 {src} 到 dist 目录失败({exc}), 请先关闭dist目录内正在运行的程序后重试')
     zip_path = DIST / f'QingmaKiller_v{version}.zip'
-    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
-        for src, arcname in bundle_files:
-            zf.write(src, arcname)
+    try:
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
+            for _, arcname in bundle_files:
+                zf.write(DIST / arcname, arcname)
+    except PermissionError:
+        sys.exit(f'发行包 {zip_path} 被其他程序占用, 请关闭后重试')
     print(f'已生成发行包: {zip_path} ({zip_path.stat().st_size / 1024 / 1024:.1f}MB)')
 
 
