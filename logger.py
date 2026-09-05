@@ -3,12 +3,10 @@ import sys
 
 from loguru import logger
 
-# 日志文件固定生成在程序目录(打包为exe后为exe所在目录), 与main.py中的路径修正逻辑保持一致
-if getattr(sys, 'frozen', False):
-    application_path = os.path.dirname(sys.executable)
-else:
-    application_path = os.path.dirname(os.path.abspath(__file__))
-LOG_FILE = os.path.join(application_path, 'qingmakiller.log')
+from paths import get_app_dir
+
+# 日志文件固定生成在程序目录(打包为exe后为exe所在目录)
+LOG_FILE = os.path.join(get_app_dir(), 'qingmakiller.log')
 
 logger.remove()
 logger.add(sys.stderr, colorize=True)
