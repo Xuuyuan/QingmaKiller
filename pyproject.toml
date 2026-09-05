@@ -9,7 +9,6 @@ authors = [
     { name = "Xuuyuan", email = "nexfoun@gmail.com" }
 ]
 dependencies = [
-    "openpyxl>=3.1.5",
     "pycryptodome>=3.21.0",
     "requests>=2.32.3",
     "beautifulsoup4>=4.12.3",
