@@ -1,6 +1,6 @@
 [project]
 name = "QingmaKiller"
-version = "1.0.0"
+version = "1.1.0"
 description = "青马易战自动答题工具"
 readme = "README.md"
 requires-python = ">=3.8"
