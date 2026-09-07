@@ -17,11 +17,9 @@ class RunConfig(NamedTuple):
 
 
 def select_subject(courses):  # 科目列表展示并选定需要刷题的科目, 循环询问直到输入合法
-    allowed_course_ids = []
     logger.info('科目ID | 科目名称')
     for course_id, course_name in courses.items():
         logger.info(f'{course_id} | {course_name}')
-        allowed_course_ids.append(course_id)
 
     while True:
         subject_id = input('请输入需要刷题的科目ID: ').strip()
@@ -29,7 +27,7 @@ def select_subject(courses):  # 科目列表展示并选定需要刷题的科目
             logger.error('未输入科目ID! ')
         elif not subject_id.isdigit():
             logger.error('科目ID错误, 请重新输入! ')
-        elif subject_id not in allowed_course_ids:
+        elif subject_id not in courses:
             logger.error('科目不在当前开放的范围内, 请重新输入! ')
         else:
             return subject_id
@@ -72,7 +70,7 @@ def collect_config():  # 收集答题参数, 逐项校验, 非法输入就地重
     now_right_rate = now_right_times / now_times if now_times != 0 else 0  # 计算当前正确率
 
     while True:  # 目标答对次数必须为正且不小于当前答对数
-        target_times = _input_nonnegative_int('请输入需要刷到的目标答对次数(不输入默认为550): ', default_target_times)
+        target_times = _input_nonnegative_int(f'请输入需要刷到的目标答对次数(不输入默认为{default_target_times}): ', default_target_times)
         if target_times == 0:
             logger.error('目标答对次数必须大于0, 请重新填写! ')
         elif target_times < now_right_times:
@@ -80,9 +78,9 @@ def collect_config():  # 收集答题参数, 逐项校验, 非法输入就地重
         else:
             break
 
-    target_right_rate = _input_rate('请输入需要刷题的保底正确率(不输入默认为0.6): ', default_target_right_rate)
+    target_right_rate = _input_rate(f'请输入需要刷题的保底正确率(不输入默认为{default_target_right_rate}): ', default_target_right_rate)
     while True:  # 上限正确率必须大于保底正确率
-        max_right_rate = _input_rate('请输入需要刷题的上限正确率(不输入默认为0.9): ', default_max_right_rate)
+        max_right_rate = _input_rate(f'请输入需要刷题的上限正确率(不输入默认为{default_max_right_rate}): ', default_max_right_rate)
         if max_right_rate > target_right_rate:
             break
         logger.error('保底正确率不能大于或等于上限正确率, 请重新填写! ')

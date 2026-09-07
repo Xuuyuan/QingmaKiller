@@ -11,7 +11,6 @@ user_agent = 'Mozilla/5.0 (Linux; Android 10; HLK-AL00 Build/HONORHLK-AL00; wv) 
 
 # 选项表
 options_list = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
-options_dict = {'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6}
 
 # tikuAdapter 本地搜题服务
 tiku_adapter_base = 'http://localhost:8060'
