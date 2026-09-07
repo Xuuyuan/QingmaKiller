@@ -12,12 +12,12 @@ import bank  # noqa: E402
 
 class BankTestBase(unittest.TestCase):
     def setUp(self):  # 在独立的临时目录中运行, 避免触碰真实题库文件
-        self._old_cwd = os.getcwd()
+        self._old_bank_file = bank.BANK_FILE
         self._tmp_dir = tempfile.TemporaryDirectory()
-        os.chdir(self._tmp_dir.name)
+        bank.BANK_FILE = os.path.join(self._tmp_dir.name, 'tiku.json')
 
     def tearDown(self):
-        os.chdir(self._old_cwd)
+        bank.BANK_FILE = self._old_bank_file
         self._tmp_dir.cleanup()
 
 
@@ -29,14 +29,14 @@ class LoadAndRecordTest(BankTestBase):
     def test_record_appends_and_persists(self):
         question_bank = bank.QuestionBank(1)
         question_bank.record('题目一', 'A. 甲 B. 乙', 'A', '甲')
-        question_bank.record('题目二', 'A. 甲 B. 乙 C. 丙', 'BC', '?')
+        question_bank.record('题目二', 'A. 甲 B. 乙 C. 丙', 'BC')
         self.assertEqual(question_bank.questions, {'题目一': 'A', '题目二': 'BC'})
         with open(bank.BANK_FILE, encoding='utf-8') as fp:
             data = json.load(fp)
         self.assertEqual(data['version'], 1)
         self.assertEqual(len(data['subjects']['1']), 2)
         self.assertEqual(data['subjects']['1'][0]['answer_text'], '甲')
-        self.assertIsNone(data['subjects']['1'][1]['answer_text'])  # '?'占位归一化为null
+        self.assertIsNone(data['subjects']['1'][1]['answer_text'])  # 未知答案文本保存为null
         # 重新载入后题目与答案一致
         reloaded = bank.QuestionBank(1)
         self.assertEqual(reloaded.questions, {'题目一': 'A', '题目二': 'BC'})

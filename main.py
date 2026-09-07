@@ -15,11 +15,7 @@ from tiku import adapter_alive
 from utils import decrypt
 from winproc import bind_to_parent
 
-# 路径修正
 application_path = get_app_dir()
-
-os.chdir(application_path)
-logger.info(f'当前工作目录已锁定至: {application_path}')
 
 
 class UserQuit(Exception):
@@ -199,7 +195,7 @@ def main():
                 stats['correct' if correct else 'wrong'] += 1
                 run_times = stats['correct'] + stats['wrong']
             if message == '回答正确！':
-                bank.record(now_subject['question'], now_subject['text_options'], my_answer, '?')
+                bank.record(now_subject['question'], now_subject['text_options'], my_answer)
                 logger.success(
                     f'本题回答正确!  当前提交次数 {run_times} 目标答对数 {target_times} 现答对数 {now_right_times} 现答题数 {now_times} 正确率 {now_right_rate * 100:.2f}%/{target_right_rate * 100}%')
             elif message == '回答错误！':

@@ -3,9 +3,10 @@ import json
 import os
 
 from logger import logger
+from paths import get_app_dir
 from utils import text_format
 
-BANK_FILE = 'tiku.json'
+BANK_FILE = os.path.join(get_app_dir(), 'tiku.json')
 
 
 def empty_bank():  # 空题库结构
@@ -43,7 +44,7 @@ class QuestionBank:
         # 加载科目题库到变量questions
         self.questions = {text_format(q['question']): q['answer'] for q in self.question_list}
 
-    def record(self, question, text_options, answer, right_answer):  # 若题目不在本地题库中则加入本地题库
+    def record(self, question, text_options, answer, right_answer=None):  # 若题目不在本地题库中则加入本地题库
         if question in self.questions:
             return
         self.questions[question] = answer
@@ -51,7 +52,6 @@ class QuestionBank:
             'question': question,
             'options': text_options,
             'answer': answer,
-            # 正确答案文本未知时以'?'占位(main.py), 存储时统一归一化为null
-            'answer_text': None if right_answer == '?' else right_answer,
+            'answer_text': right_answer,
         })
         save_bank(self.bank)
