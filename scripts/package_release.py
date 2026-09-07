@@ -33,7 +33,7 @@ def read_version():  # 版本号单一来源: pyproject.toml
 
 
 def build_exe():  # PyInstaller onefile 打包主程序(不用 UPX, 降低杀软误报概率)
-    run([sys.executable, '-m', 'PyInstaller', '--onefile', '--clean', '--noconfirm', '--name', 'QingmaKiller', 'main.py'], cwd=ROOT)
+    run([sys.executable, '-m', 'PyInstaller', '--onefile', '--noupx', '--clean', '--noconfirm', '--name', 'QingmaKiller', 'main.py'], cwd=ROOT)
 
 
 def previous_tag():  # 当前提交的上一枚发行 tag, 用于生成变更日志(无 tag 时返回None)

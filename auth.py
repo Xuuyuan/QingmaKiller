@@ -45,7 +45,7 @@ def _is_site_error_page(body):  # 判断响应体是否为站点错误页(URL失
 def handshake_from_url(url):  # 通过APP复制的URL建立会话, 返回 (cookie, 失败原因), 成功时失败原因为None
     session = _new_session()
     try:
-        res = session.get(url, timeout=15)
+        res = session.get(url, timeout=5)
     except requests.RequestException as exc:
         logger.debug(f'URL握手请求异常: {exc}')
         return None, '网络请求失败'

@@ -78,7 +78,11 @@ def collect_config():  # 收集答题参数, 逐项校验, 非法输入就地重
         else:
             break
 
-    target_right_rate = _input_rate(f'请输入需要刷题的保底正确率(不输入默认为{default_target_right_rate}): ', default_target_right_rate)
+    while True:
+        target_right_rate = _input_rate(f'请输入需要刷题的保底正确率(不输入默认为{default_target_right_rate}): ', default_target_right_rate)
+        if target_right_rate < 1:
+            break
+        logger.error('保底正确率必须小于1, 请重新填写! ')
     while True:  # 上限正确率必须大于保底正确率
         max_right_rate = _input_rate(f'请输入需要刷题的上限正确率(不输入默认为{default_max_right_rate}): ', default_max_right_rate)
         if max_right_rate > target_right_rate:

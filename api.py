@@ -23,7 +23,7 @@ def build_headers(cookie, referer):  # 站点JSON接口的通用请求头
 def get_course_list(cookie) -> dict:  # 获取课程列表
     headers = build_headers(cookie, f'{base_url}/yiban-web/stu/toCourse.jhtml')
     response = requests.get(f"{base_url}/yiban-web/stu/toCourse.jhtml",
-                            data="", headers=headers, allow_redirects=False)
+                            headers=headers, allow_redirects=False, timeout=5)
     if response.status_code == 302:
         return {"isSuccess": False}
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -44,8 +44,7 @@ def _parse_site_json(response, action):  # 解析站点JSON响应, 会话失效�
 
 def fetch_question(headers, subject_id) -> dict:  # 获取下一题并解密, 返回字段化的字典, 失败时返回None
     req = requests.post(
-        f'{base_url}/yiban-web/stu/nextSubject.jhtml?_={gettime()}', headers=headers, data={'courseId': subject_id})
-    # TODO
+        f'{base_url}/yiban-web/stu/nextSubject.jhtml?_={gettime()}', headers=headers, data={'courseId': subject_id}, timeout=5)
     if 'document.location=\'/host_not_found_error\'' in req.text:
         logger.error('该URL已过期, 请根据指引重新获取URL! ')
         return None
@@ -74,5 +73,5 @@ def submit_answer(headers, subject_id, uuid, answer):  # 提交答案, 返回响
     data_submit = {'answer': answer,
                    'courseId': subject_id, 'uuid': uuid, 'deviceUuid': ""}
     req_submit = requests.post(
-        f'{base_url}/yiban-web/stu/changeSituation.jhtml?_={gettime()}', headers=headers, data=data_submit)
+        f'{base_url}/yiban-web/stu/changeSituation.jhtml?_={gettime()}', headers=headers, data=data_submit, timeout=5)
     return _parse_site_json(req_submit, '提交答案')

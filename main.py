@@ -173,7 +173,7 @@ def main():
     run_times = 0
     try:
         # 开始运行
-        while now_right_times <= target_times or now_right_rate < target_right_rate:  # 循环条件
+        while now_right_times < target_times or now_right_rate < target_right_rate:  # 循环条件
             # 获取题目及选项
             now_subject = fetch_question(headers, subjectId)
             if now_subject is None:

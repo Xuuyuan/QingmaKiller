@@ -28,6 +28,8 @@ def search(question, question_type, options):  # 搜题并按题型规整答案,
         return None
     try:  # 响应为空/非JSON或结构异常(如服务正在退出、未配置题库)时跳过本题, 避免中断整轮运行
         my_answer = json.loads(req_tiku.text)['answer']['answerKeyText']
+        if my_answer is not None and not isinstance(my_answer, str):
+            raise TypeError('答案必须为字符串或null')
     except (json.JSONDecodeError, KeyError, TypeError):
         logger.error(f'tikuAdapter响应异常, 自动跳过本题! HTTP {req_tiku.status_code}: {req_tiku.text[:200]}')
         return None
