@@ -24,32 +24,26 @@ def decide_answer(question, question_type, options, questions, now_right_rate, m
     if '刷题' in question or '请选择' in question:
         logger.warning('检测到防刷题题目, 自动跳过')
         return False, '', 'anti'
-    if question in questions:  # 题目已存在本地题库
-        if now_right_rate > max_right_rate:  # 正确率过高
+    if now_right_rate > max_right_rate:
+        if question in questions:
             logger.warning(f'该题目已存在本地题库中/正确率过高!  正确答案为 {questions[question]}, 将自动提交随机答案! ')
-            my_answer = _random_answer(question_type, len(options))
         else:
-            logger.info(f'该题目已存在本地题库中!  正确答案为 {questions[question]}, 将自动提交! ')
-            my_answer = questions[question]
-        return True, my_answer, None
+            logger.warning('正确率过高, 将自动提交随机答案! ')
+        return True, _random_answer(question_type, len(options)), None
+    if question in questions:
+        logger.info(f'该题目已存在本地题库中!  正确答案为 {questions[question]}, 将自动提交! ')
+        return True, questions[question], None
 
-    # 题目不存在本地题库中, 尝试从网络题库获取
-    my_answer = ''
-    force_choose = False
     if question_type == 0:
-        for d in range(len(options)):
-            if '下都是' in options[d] or '上都是' in options[d]:  # 有出现对应文本的选项直接提交
-                my_answer = options_list[d]
-                force_choose = True
-    if now_right_rate > max_right_rate:  # 正确率过高, 随机提交答案
-        my_answer = _random_answer(question_type, len(options))
-        logger.warning('正确率过高, 将自动提交随机答案! ')
-        force_choose = True
-    elif not force_choose:
-        my_answer = search(question, question_type, options)
-        if my_answer is None:  # tikuAdapter不可用, 自动跳过本题
-            return False, '', 'adapter'
-    if my_answer == '':  # 网络题库未找到答案
+        # 保留多个特殊选项命中时选择最后一个的行为。
+        for index in range(len(options) - 1, -1, -1):
+            if '下都是' in options[index] or '上都是' in options[index]:
+                return True, options_list[index], None
+
+    my_answer = search(question, question_type, options)
+    if my_answer is None:
+        return False, '', 'adapter'
+    if my_answer == '':
         logger.warning('网络题库未找到答案, 本题跳过! ')
         return False, '', 'no_answer'
     return True, my_answer, None

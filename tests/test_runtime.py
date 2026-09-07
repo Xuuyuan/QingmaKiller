@@ -12,6 +12,40 @@ import tiku
 
 
 class RuntimeTest(unittest.TestCase):
+    def test_session_confirmation_is_not_repeated(self):
+        with patch.object(main, 'session_confirmed', False), patch.object(main, 'load_saved_session', return_value=('test', None)), patch.object(main, 'validate_cookie', return_value={'courses': {}}), patch.object(main, '_ask_use_saved_session', return_value=True) as ask:
+            self.assertEqual(main.acquire_session(), ('test', {'courses': {}}))
+            self.assertEqual(main.acquire_session(), ('test', {'courses': {}}))
+            ask.assert_called_once_with(None)
+
+    def test_correct_wrong_and_cooldown_statistics(self):
+        question = dict(question='test', description='test', text_options='A. test', type=0, options=['test'], uuid='test')
+        responses = [
+            {'message': '回答错误！', 'data': {'rightOption': 'encrypted'}},
+            {'message': '您的答题速度过快，请认真答题，30s后可继续答题.'},
+            {'message': '回答正确！'},
+            {'message': '回答正确！'},
+        ]
+        with ExitStack() as stack:
+            for name in ('ensure_tiku_adapter', 'countdown'):
+                stack.enter_context(patch.object(main, name))
+            stack.enter_context(patch.object(main.time, 'sleep'))
+            stack.enter_context(patch.object(main, 'acquire_session', return_value=('test', {'courses': {'7': 'test'}})))
+            stack.enter_context(patch.object(main, 'select_subject', return_value='7'))
+            stack.enter_context(patch.object(main, 'collect_config', return_value=cli.RunConfig(0, 0, 0, 1, 0.6, 0.9)))
+            stack.enter_context(patch.object(main, 'QuestionBank'))
+            stack.enter_context(patch('builtins.input', return_value=''))
+            stack.enter_context(patch.object(main, 'fetch_question', return_value=question))
+            stack.enter_context(patch.object(main, 'decide_answer', return_value=(True, 'A', None)))
+            stack.enter_context(patch.object(main, 'decrypt', return_value='B'))
+            submit = stack.enter_context(patch.object(main, 'submit_answer', side_effect=responses))
+            summary = stack.enter_context(patch.object(main, 'print_run_summary'))
+            main.main()
+            self.assertEqual(submit.call_count, 4)
+            args = summary.call_args.args
+            self.assertEqual(args[0], dict(correct=2, wrong=1, anti=0, no_answer=0, adapter=0, cooldown=1))
+            self.assertEqual(args[2:5], (3, 2, 2 / 3))
+
     def test_full_target_rate_is_reprompted(self):
         with patch('builtins.input', side_effect=['0', '0', '1', '1', '0.6', '1']):
             config = cli.collect_config()

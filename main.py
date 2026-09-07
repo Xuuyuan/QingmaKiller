@@ -83,11 +83,9 @@ def acquire_session():  # 会话获取链路: 本地持久化会话 → URL握�
         logger.info('检测到本地保存的会话, 正在验证…')
         course_list = validate_cookie(jsessionid)
         if course_list is not None:
-            if session_confirmed:  # 本进程已确认过沿用/切换, 后续轮次静默复用有效会话
-                logger.success(f'本地会话有效, 已跳过认证: {jsessionid}')
-                return jsessionid, course_list
+            use_saved = session_confirmed
             session_confirmed = True
-            if _ask_use_saved_session(saved_at):
+            if use_saved or _ask_use_saved_session(saved_at):
                 logger.success(f'本地会话有效, 已跳过认证: {jsessionid}')
                 return jsessionid, course_list
             logger.info('已选择切换账号, 请重新完成URL认证')
@@ -170,7 +168,6 @@ def main():
 
     stats = {'correct': 0, 'wrong': 0, 'anti': 0, 'no_answer': 0, 'adapter': 0, 'cooldown': 0}
     started_at = time.monotonic()
-    run_times = 0
     try:
         # 开始运行
         while now_right_times < target_times or now_right_rate < target_right_rate:  # 循环条件
@@ -194,20 +191,18 @@ def main():
             res_submit = submit_answer(headers, subjectId, now_subject['uuid'], my_answer)
 
             message = res_submit['message']
-            if message == '回答正确！':  # 回答正确
-                run_times += 1
+            if message in ('回答正确！', '回答错误！'):
+                correct = message == '回答正确！'
                 now_times += 1
-                now_right_times += 1
+                now_right_times += int(correct)
                 now_right_rate = now_right_times / now_times
-                stats['correct'] += 1
+                stats['correct' if correct else 'wrong'] += 1
+                run_times = stats['correct'] + stats['wrong']
+            if message == '回答正确！':
                 bank.record(now_subject['question'], now_subject['text_options'], my_answer, '?')
                 logger.success(
                     f'本题回答正确!  当前提交次数 {run_times} 目标答对数 {target_times} 现答对数 {now_right_times} 现答题数 {now_times} 正确率 {now_right_rate * 100:.2f}%/{target_right_rate * 100}%')
-            elif message == '回答错误！':  # 回答错误
-                run_times += 1
-                now_times += 1
-                now_right_rate = now_right_times / now_times
-                stats['wrong'] += 1
+            elif message == '回答错误！':
                 rightAnswer = decrypt(res_submit['data']['rightOption'])
                 bank.record(now_subject['question'], now_subject['text_options'],
                             ''.join(k for k in options_list if k in rightAnswer), rightAnswer)
