@@ -9,5 +9,6 @@ from paths import get_app_dir
 LOG_FILE = os.path.join(get_app_dir(), 'qingmakiller.log')
 
 logger.remove()
-logger.add(sys.stderr, colorize=True)
+logger.add(sys.stderr, colorize=True,
+           format='<green>{time:HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{module}</cyan> | <level>{message}</level>')
 logger.add(LOG_FILE, rotation='10 MB', level='TRACE', encoding='utf-8', enqueue=True)

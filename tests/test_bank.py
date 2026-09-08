@@ -47,6 +47,21 @@ class LoadAndRecordTest(BankTestBase):
         question_bank.record('题目一', 'A. 甲 B. 乙', 'A', '甲')
         self.assertEqual(len(question_bank.question_list), 1)
 
+    def test_wrong_known_answer_is_corrected_and_persisted(self):
+        question_bank = bank.QuestionBank(1)
+        question_bank.record('题目一', 'A. 甲 B. 乙', 'A')
+        question_bank.record('题目一', 'A. 甲 B. 乙', 'B', '乙')
+        self.assertEqual(question_bank.questions['题目一'], 'B')
+        self.assertEqual(len(question_bank.question_list), 1)
+        self.assertEqual(bank.QuestionBank(1).questions['题目一'], 'B')
+        self.assertEqual(question_bank.question_list[0]['answer_text'], '乙')
+
+    def test_submitted_answer_cannot_overwrite_known_answer(self):
+        question_bank = bank.QuestionBank(1)
+        question_bank.record('题目一', 'A. 甲 B. 乙', 'A')
+        question_bank.record('题目一', 'A. 甲 B. 乙', 'B')
+        self.assertEqual(question_bank.questions['题目一'], 'A')
+
 
 class SubjectIsolationTest(BankTestBase):
     def test_same_question_in_different_subjects(self):

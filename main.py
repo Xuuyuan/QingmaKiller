@@ -140,8 +140,10 @@ def stop_tiku_adapter():  # 关闭由本程序拉起的搜题服务, 用户手�
 
 def main():
     logger.info('=== Qingmakiller 青马易战自动答题工具 ===')
-    ensure_tiku_adapter()
     cookie, course_list = acquire_session()
+    if not course_list['courses']:
+        logger.warning('当前无开放课程。')
+        return
 
     # 选定需要刷题的科目
     subjectId = select_subject(course_list['courses'])
@@ -155,6 +157,7 @@ def main():
                 f'保底正确率 {target_right_rate * 100:g}% / 上限正确率 {max_right_rate * 100:g}%')
     if input('直接回车开始答题, 输入 q 并回车退出: ').strip().lower() == 'q':
         raise UserQuit
+    ensure_tiku_adapter()
 
     headers = build_headers(cookie, f'{base_url}/yiban-web/stu/toSubject.jhtml?courseId={subjectId}')
 
@@ -168,6 +171,7 @@ def main():
         # 开始运行
         while now_right_times < target_times or now_right_rate < target_right_rate:  # 循环条件
             # 获取题目及选项
+            logger.info('正在获取题目…')
             now_subject = fetch_question(headers, subjectId)
             if now_subject is None:
                 break
@@ -181,9 +185,10 @@ def main():
                 countdown(random.randint(4, 10), '本题已跳过')
                 continue
             # 随机休眠, 防止检测
-            time.sleep(random.randint(4, 10))
+            countdown(random.randint(4, 10), '等待提交答案')
 
             # 提交答案
+            logger.info('正在提交答案…')
             res_submit = submit_answer(headers, subjectId, now_subject['uuid'], my_answer)
 
             message = res_submit['message']

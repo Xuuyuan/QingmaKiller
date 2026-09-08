@@ -6,20 +6,23 @@ import requests
 from config import headers_tiku, tiku_adapter_base, tiku_adapter_url
 from logger import logger
 
+session = requests.Session()
+
 
 def adapter_alive(timeout=2):  # 探测本地搜题服务是否在运行
     try:
-        requests.get(tiku_adapter_base, timeout=timeout)
+        session.get(tiku_adapter_base, timeout=timeout)
         return True
     except requests.RequestException:
         return False
 
 
 def search(question, question_type, options):  # 搜题并按题型规整答案, tikuAdapter不可用或响应异常时返回None
+    logger.info('正在搜索网络题库…')
     try:
-        req_tiku = requests.post(tiku_adapter_url, json={
+        req_tiku = session.post(tiku_adapter_url, json={
                                  "question": question, "type": question_type, "options": options},
-                                 headers=headers_tiku, timeout=30)
+                                 headers=headers_tiku, timeout=5)
     except requests.exceptions.ConnectionError:
         logger.error('无法连接到tikuAdapter, 自动跳过本题, 请先启动tikuAdapter再运行本程序! ')
         return None
