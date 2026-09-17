@@ -68,7 +68,7 @@ def write_release_notes(version):  # 生成 Release 说明: 仓库根目录存�
 ### 使用方法
 
 1. 下载下方的 `QingmaKiller_v{version}.zip` 压缩包。
-2. 解压到任意文件夹, 双击运行 `QingmaKiller.exe`, 按提示输入参数即可(搜题服务 tikuAdapter 会随主程序自动启动/关闭, 无需手动运行)。
+2. 解压到任意文件夹, 双击运行 `QingmaKiller.exe`, 按提示输入参数即可(网络题库已内置, 无需任何外部服务或配置)。
 
 ### 注意事项
 
@@ -84,7 +84,6 @@ def write_release_notes(version):  # 生成 Release 说明: 仓库根目录存�
 def make_zip(version):  # 组装发行文件: dist目录内铺开一套可直接运行的文件, 并压缩为发布 zip
     bundle_files = [
         (DIST / 'QingmaKiller.exe', 'QingmaKiller.exe'),
-        (ROOT / 'tikuAdapter.exe', 'tikuAdapter.exe'),
         (ROOT / 'tiku.json', 'tiku.json'),
         (ROOT / 'LICENSE', 'LICENSE'),
     ]

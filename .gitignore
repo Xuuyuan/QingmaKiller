@@ -5,6 +5,9 @@ build/
 dist/
 *.spec
 *.egg-info/
+.venv-build/
 tiku.db
 tiku.json.tmp
 tiku.json.broken
+banks.json
+banks.json.broken
