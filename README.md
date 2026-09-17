@@ -14,27 +14,22 @@
 - 答题次数与目标正确率配置
 - 防刷题题目自动跳过
 - 随机答题延迟
-- 本地题库 + 在线题库兜底（感谢[题库适配器(@DokiDoki1103)](https://github.com/DokiDoki1103/tikuAdapter)）
+- 本地题库 + 内置多源网络题库兜底（搜题逻辑移植自 [题库适配器 tikuAdapter(@DokiDoki1103)](https://github.com/DokiDoki1103/tikuAdapter)，无需再单独运行外部程序）
 
 > [!WARNING]
 > 本工具遵循MIT License，即任何人都有免费获得本软件和相关文档文件副本的许可，能够不受限制地处理本软件，包括但不限于使用、复制、修改、合并、发布、分发、再许可的权利，被许可人有权利使用、复制、修改、合并、出版发行、散布、再许可和/或贩售软件及软件的副本，及授予被供应人同等权利，但在软件和软件的所有副本中都必须包含版权声明和许可声明，**作者不对使用本项目产生的任何后果承担责任**。
 
 ## 使用方法
 
-**若需要下载发行版本请进入 [Releases](https://github.com/Xuuyuan/QingmaKiller/releases)**，压缩包内含主程序 `QingmaKiller.exe`、搜题服务 `tikuAdapter.exe` 与本地题库 `tiku.json`，解压后双击 `QingmaKiller.exe` 即可使用，无需配置 Python 环境。源码运行则请按照以下步骤依次执行。
+**若需要下载发行版本请进入 [Releases](https://github.com/Xuuyuan/QingmaKiller/releases)**，压缩包内含主程序 `QingmaKiller.exe` 与本地题库 `tiku.json`，解压后双击 `QingmaKiller.exe` 即可使用，无需配置 Python 环境，网络题库已内置、无需任何外部服务。源码运行则请按照以下步骤依次执行。
 
 ### 1. 拉取本仓库至本地
 
 在仓库主页面中单击 Code 按钮，根据实际需求选择 Clone 或 Download ZIP（若无二次开发/在 VSCode 等 IDE 中运行的需求时，可以选择 Download ZIP）。
 
-### 2. 运行 tikuAdapter
+### 2. 配置环境（二选一）
 
-仓库中已经内置了 tikuAdapter_0.1.0-beta.39 的可执行文件，适用于 Windows_amd64。在 Windows 系统中启动主程序时，会自动启动/关闭 tikuAdapter 服务。  
-若需要应用于其它系统，请前往 [tikuAdapter Releases](https://github.com/DokiDoki1103/tikuAdapter/releases) 下载。
-
-### 3. 配置环境（二选一）
-
-#### 3.1 使用 uv 管理环境
+#### 2.1 使用 uv 管理环境
 
 1. **安装 uv** (如果尚未安装) 在终端中执行如下指令:
    - **Windows 系统**： `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`
@@ -48,7 +43,7 @@
     uv run main.py
     ```
 
-#### 3.2 使用 pip 管理环境
+#### 2.2 使用 pip 管理环境
 
 请使用 Python 3.8+ 环境运行，相关环境请自行配置。  
 工具所需的软件包已在 `pyproject.toml` 中注明，或可在项目根目录下打开终端、执行以下指令：
@@ -59,12 +54,45 @@ pip install .
 
 依赖安装完成后，在项目根目录下打开终端，执行 `python main.py` 运行主程序，按照提示输入参数即可。
 
-### 4. 完成用户认证
+### 3. 完成用户认证
 
 用户认证获取方法（程序按以下优先级自动依次尝试）：
 
 1. **本地会话复用**：程序会将会话缓存在同目录的 `session.json` 中，下次运行时自动验证；验证通过后会询问沿用该会话还是切换其它账号（直接回车沿用，输入 `y` 并回车切换），有效期内无需再次认证；
 2. **URL 认证**：进入青马易战主界面（有大视频播放的页面），点击右上角交互按钮，选择【复制链接】，将获取到的 URL 粘贴到输入框中。若 URL 已失效，程序会在数秒内给出明确提示，此时请重新复制最新链接。
+
+## 网络题库配置
+
+程序内置 7 个网络题库源，启动时并发搜题并对各源结果投票取最可能的答案。默认只启用 4 个免费源（不挂科、icodef、万能、题库海），付费源默认关闭。如需启用付费题库或填写对应 token，请在**程序同目录**创建 `banks.json`（发行包不携带此文件）：
+
+```json
+{
+  "version": 1,
+  "buguake": {"enable": true},
+  "icodef":  {"enable": true,  "token": ""},
+  "wanneng": {"enable": true,  "token": ""},
+  "tikuhai": {"enable": true,  "key": ""},
+  "enncy":   {"enable": false, "token": ""},
+  "aidian":  {"enable": false, "token": ""},
+  "lemon":   {"enable": false, "token": ""}
+}
+```
+
+- 文件可以只写需要修改的源，缺失的源按上表默认值处理；文件缺失或损坏时按默认配置运行，不影响答题。
+- 免费源（不挂科/icodef/万能/题库海）默认启用，也可通过 `"enable": false` 手动关闭；付费源必须 `"enable": true` 且填入对应 token/key 才会实际生效。
+- 爱点（aidian）比较特殊：`enable: true` 即可启用，无 token 时走免费限流接口，填入 token 后走付费不限流接口。
+- 各源 token/key 的获取渠道：
+
+| 源 | 官网 |
+|---|---|
+| icodef | <https://q.icodef.com> |
+| 万能 wanneng | <https://lyck6.cn/pay> |
+| 题库海 tikuhai | <https://shop.tikuhai.com> |
+| 言溪 enncy | <https://tk.enncy.cn/> |
+| 爱点 aidian | <https://www.51aidian.com> |
+| 柠檬 lemon | <https://www.lemtk.xyz> |
+
+- 运行日志中会显示每题命中的题库源，可用于判断付费源是否物有所值。`banks.json` 含个人密钥，请注意保管、不要外传。
 
 ## 注意事项
 
