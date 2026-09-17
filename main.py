@@ -1,6 +1,4 @@
-import os
 import random
-import subprocess
 import time
 
 from api import build_headers, fetch_question, get_course_list, submit_answer
@@ -9,13 +7,9 @@ from bank import QuestionBank
 from cli import collect_config, countdown, print_run_summary, select_subject
 from config import base_url, options_list
 from logger import logger
-from paths import get_app_dir
 from solver import decide_answer
-from tiku import adapter_alive
+from tiku import enabled_sources
 from utils import decrypt
-from winproc import bind_to_parent
-
-application_path = get_app_dir()
 
 
 class UserQuit(Exception):
@@ -95,49 +89,6 @@ def acquire_session():  # 会话获取链路: 本地持久化会话 → URL握�
     return login_by_url()
 
 
-tiku_adapter_process = None  # 本程序自动拉起的tikuAdapter子进程, 程序退出时同步关闭
-
-
-def ensure_tiku_adapter():  # 探测本地搜题服务, 未运行时尝试自动拉起同目录的tikuAdapter.exe
-    global tiku_adapter_process
-    if adapter_alive():
-        logger.info('搜题服务(tikuAdapter)运行正常')
-        return
-    exe_path = os.path.join(application_path, 'tikuAdapter.exe')
-    if not os.path.exists(exe_path):
-        logger.warning('未找到搜题程序 tikuAdapter.exe, 本地题库未命中的题目将被跳过! ')
-        return
-    logger.info('搜题服务未运行, 正在尝试自动启动 tikuAdapter.exe…')
-    try:  # 输出重定向到独立日志文件, 避免搜题服务日志混入主程序终端
-        with open(os.path.join(application_path, 'tikuadapter.log'), 'w', encoding='utf-8') as log_fp:
-            tiku_adapter_process = subprocess.Popen(
-                [exe_path], cwd=application_path, stdin=subprocess.DEVNULL,
-                stdout=log_fp, stderr=subprocess.STDOUT,
-                creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
-    except OSError as exc:
-        logger.warning(f'tikuAdapter 自动启动失败({exc}), 本地题库未命中的题目将被跳过! 可手动启动后重试。')
-        return
-    if not bind_to_parent(tiku_adapter_process):
-        logger.warning('tikuAdapter 进程守护绑定失败, 直接关闭本程序窗口时可能残留 tikuAdapter 进程! ')
-    for _ in range(15):  # 最多等待15秒直到搜题服务就绪
-        if adapter_alive():
-            logger.info('搜题服务已启动')
-            return
-        time.sleep(1)
-    logger.warning('等待搜题服务启动超时, 本地题库未命中的题目将被跳过! ')
-
-
-def stop_tiku_adapter():  # 关闭由本程序拉起的搜题服务, 用户手动启动的不做处理
-    if tiku_adapter_process is None or tiku_adapter_process.poll() is not None:
-        return
-    try:
-        tiku_adapter_process.terminate()
-        tiku_adapter_process.wait(timeout=5)
-        logger.info('已同步关闭搜题服务(tikuAdapter)。')
-    except Exception as exc:
-        logger.warning(f'关闭搜题服务失败({exc}), 如有残留请手动结束 tikuAdapter 进程! ')
-
-
 def main():
     logger.info('=== Qingmakiller 青马易战自动答题工具 ===')
     cookie, course_list = acquire_session()
@@ -157,7 +108,7 @@ def main():
                 f'保底正确率 {target_right_rate * 100:g}% / 上限正确率 {max_right_rate * 100:g}%')
     if input('直接回车开始答题, 输入 q 并回车退出: ').strip().lower() == 'q':
         raise UserQuit
-    ensure_tiku_adapter()
+    enabled_sources()  # 读取并输出本次启用的网络题库源(含付费题库配置)
 
     headers = build_headers(cookie, f'{base_url}/yiban-web/stu/toSubject.jhtml?courseId={subjectId}')
 
@@ -248,4 +199,3 @@ if __name__ == '__main__':
             if input('本轮已结束。直接回车继续下一轮, 输入 q 并回车退出: ').strip().lower() == 'q':
                 logger.info('程序已退出。')
                 break
-    stop_tiku_adapter()  # 所有退出路径(正常结束/主动退出/中断/连续异常)最终都汇合到这里

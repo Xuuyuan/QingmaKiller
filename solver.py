@@ -1,4 +1,4 @@
-"""作答决策: 依据本地题库、tikuAdapter 搜题结果与正确率决定提交内容"""
+"""作答决策: 依据本地题库、网络题库搜题结果与正确率决定提交内容"""
 import random
 
 from config import options_list
@@ -16,7 +16,7 @@ def decide_answer(question, question_type, options, questions, now_right_rate, m
     """决定本题的作答, 返回 (should_submit, my_answer, skip_reason)。
 
     should_submit 为 False 表示跳过本题, skip_reason 取值:
-    'anti'(防刷题题目) / 'no_answer'(本地与网络题库均未找到答案) / 'adapter'(搜题服务不可用);
+    'anti'(防刷题题目) / 'no_answer'(本地与网络题库均未找到答案) / 'adapter'(网络题库不可用);
     should_submit 为 True 时 skip_reason 为 None。
     跳过后的等待延迟由调用方(main)统一随机处理, 本函数内部不做等待。
     """

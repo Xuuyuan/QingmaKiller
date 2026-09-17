@@ -12,10 +12,17 @@ user_agent = 'Mozilla/5.0 (Linux; Android 10; HLK-AL00 Build/HONORHLK-AL00; wv) 
 # 选项表
 options_list = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
 
-# tikuAdapter 本地搜题服务
-tiku_adapter_base = 'http://localhost:8060'
-tiku_adapter_url = f'{tiku_adapter_base}/adapter-service/search'
-headers_tiku = {"content-type": "application/json"}
+# 内置网络题库(搜题逻辑移植自 tikuAdapter, 各源启用与否及付费token配置见程序同目录的 banks.json)
+banks_config_filename = 'banks.json'
+buguake_api = 'https://easylearn.baidu.com/edu-web-go/bgk/searchlist'
+icodef_api = 'https://cx.icodef.com/wyn-nb?v=4'
+wanneng_free_api = 'http://lyck6.cn/scriptService/api/autoFreeAnswer'
+wanneng_api = 'http://lyck6.cn/scriptService/api/autoAnswer/{}'
+tikuhai_api = 'https://api.tikuhai.com/search'
+enncy_api = 'https://tk.enncy.cn/query'
+aidian_free_api = 'http://new.api.51aidian.com/publics/newapi/freedirect'
+aidian_api = 'http://new.api.51aidian.com/publics/newapi/direct'
+lemon_api = 'https://api.lemtk.xyz/api/v1/mcx'
 
 # decrypt 使用的固定密钥(由青马易战网页的js中获取, 有被修改的可能性)
 decrypt_key_b64 = "ZDBmMTNiZGI3MDRhMWVhMWE3MTcwNjJiNTk0NzY0ODg="

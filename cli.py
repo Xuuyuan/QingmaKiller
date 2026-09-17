@@ -109,7 +109,7 @@ def print_run_summary(stats, elapsed_seconds, now_times, now_right_times, now_ri
     logger.info('=== 本次运行统计 ===')
     logger.info(f'提交答题: {submitted} 次 (答对 {stats["correct"]} / 答错 {stats["wrong"]})')
     logger.info(f'跳过题目: {stats["anti"] + stats["no_answer"] + stats["adapter"]} 次 '
-                f'(防刷题 {stats["anti"]} / 未搜到答案 {stats["no_answer"]} / 搜题服务不可用 {stats["adapter"]})')
+                f'(防刷题 {stats["anti"]} / 未搜到答案 {stats["no_answer"]} / 网络题库不可用 {stats["adapter"]})')
     logger.info(f'触发答题冷却: {stats["cooldown"]} 次')
     if submitted > 0:
         logger.info(f'本次耗时: {minutes}分{seconds}秒 (平均每题 {elapsed_seconds / submitted:.1f} 秒)')
