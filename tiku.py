@@ -250,7 +250,13 @@ def _load_sources():  # 读取banks.json, 缺失按默认配置; 损坏时备份
     for name, source in config.items():  # 仅接受已知源的已知字段, 未知内容一律忽略
         override = data.get(name)
         if isinstance(override, dict):
-            source.update({key: value for key, value in override.items() if key in source})
+            for key, value in override.items():
+                if key not in source:
+                    continue
+                if key == 'enable' and not isinstance(value, bool):
+                    logger.warning(f'网络题库配置 {name}.enable 必须为布尔值, 已忽略该配置')
+                    continue
+                source[key] = value
     return config
 
 

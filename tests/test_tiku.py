@@ -65,6 +65,12 @@ class SourceConfigTest(unittest.TestCase):
         self.assertEqual(config['icodef'], {'enable': True, 'token': 'T2'})
         self.assertNotIn('nonsense', config)
 
+    def test_non_boolean_enable_keeps_default(self):
+        self._write({'buguake': {'enable': 'false'}, 'enncy': {'enable': 1}})
+        config = tiku.enabled_sources()
+        self.assertTrue(config['buguake']['enable'])
+        self.assertFalse(config['enncy']['enable'])
+
 
 class BuguakeDecryptTest(unittest.TestCase):
     """不挂科响应解密, 使用真实接口抓取的样本fixture。"""
