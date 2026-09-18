@@ -108,14 +108,14 @@ def _search_buguake(question, options, question_type, spec):  # 不挂科(百度
             continue
         try:
             detail = json.loads(_buguake_decrypt(item.get('bdjson', ''), item.get('actk', '')))
-        except json.JSONDecodeError:
+            stem = _dig(detail, 'que_stem', 0, 'c', 0, 'c')
+            if not isinstance(stem, str) or _similarity(question, stem) < _BUGUAKE_MIN_SIMILARITY:
+                continue
+            texts = _buguake_correct_options(detail) or _buguake_answer_texts(detail)
+            if texts and all(isinstance(text, str) for text in texts):
+                answer_sets.append(texts)
+        except (ValueError, TypeError, AttributeError):
             continue
-        stem = _dig(detail, 'que_stem', 0, 'c', 0, 'c')
-        if not isinstance(stem, str) or _similarity(question, stem) < _BUGUAKE_MIN_SIMILARITY:
-            continue
-        texts = _buguake_correct_options(detail) or _buguake_answer_texts(detail)
-        if texts:
-            answer_sets.append(texts)
     return answer_sets
 
 
@@ -129,7 +129,9 @@ def _search_icodef(question, options, question_type, spec):  # icodef题库, 触
     result = response.json()
     if result.get('code') != 1:
         return []
-    answer = str(result.get('data') or '')
+    answer = result.get('data')
+    if not isinstance(answer, str):
+        return []
     return [answer.split('#')] if answer else []
 
 
@@ -196,10 +198,16 @@ def _search_aidian(question, options, question_type, spec):  # 爱点题库(无t
                              json={'question': question, 'token': token}, timeout=3)
     answer_sets = []
     for item in (response.json().get('qlist') or []):
+        if not isinstance(item, dict):
+            continue
+        raw_options = item.get('options') or []
+        raw_answers = item.get('answer') or []
+        if (not isinstance(raw_options, list) or not isinstance(raw_answers, list)
+                or any(not isinstance(value, str) for value in raw_options + raw_answers)):
+            continue
         item_options = _format_options(item.get('options') or [])
         answers = []
-        for value in (item.get('answer') or []):
-            value = str(value)
+        for value in raw_answers:
             if re.fullmatch(r'[A-Z]+', value):  # "ABC"形式的字母答案按下标映射为选项文本
                 answers.extend(item_options[ord(letter) - 65] for letter in value
                                if 0 <= ord(letter) - 65 < len(item_options))

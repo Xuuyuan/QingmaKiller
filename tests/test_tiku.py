@@ -115,6 +115,30 @@ class BuguakeSearchTest(unittest.TestCase):
 class ClientProtocolTest(unittest.TestCase):
     """各题库源的请求构造与响应解析。"""
 
+    def test_icodef_rejects_non_text_answers(self):
+        for value in (42, True, ['甲'], {'answer': '甲'}, None):
+            with self.subTest(value=value), patch.object(tiku.requests, 'post',
+                    return_value=_json_response({'code': 1, 'data': value})):
+                self.assertEqual(tiku._search_icodef('q', ['甲'], 0, {}), [])
+
+    def test_aidian_preserves_valid_candidate_after_malformed_ones(self):
+        payload = {'qlist': [None, {'options': [42], 'answer': ['A']},
+                            {'options': ['甲'], 'answer': [{'text': '甲'}]},
+                            {'options': ['甲'], 'answer': 'A'},
+                            {'options': ['甲'], 'answer': ['A']}]}
+        with patch.object(tiku.requests, 'post', return_value=_json_response(payload)):
+            self.assertEqual(tiku._search_aidian('q', ['甲'], 0, {}), [['甲']])
+
+    def test_buguake_preserves_valid_candidate_after_bad_nested_data(self):
+        stem = {'que_stem': [{'c': [{'c': 'q'}]}]}
+        details = [dict(stem, que_options=[42]),
+                   dict(stem, que_answer=[{'c': [{'c': 42}]}]),
+                   dict(stem, que_answer=[{'c': [{'c': '甲'}]}])]
+        payload = {'data': {'list': [{'bdjson': 'x'} for _ in details]}}
+        with patch.object(tiku.requests, 'get', return_value=_json_response(payload)), \
+                patch.object(tiku, '_buguake_decrypt', side_effect=map(json.dumps, details)):
+            self.assertEqual(tiku._search_buguake('q', ['甲'], 0, {}), [['甲']])
+
     def test_icodef_retries_on_flow_control_and_parses(self):
         flow_control = Mock(status_code=200, text='触发流控限制')
         good = _json_response({'code': 1, 'data': '甲#乙'})
