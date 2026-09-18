@@ -152,6 +152,11 @@ class ClientProtocolTest(unittest.TestCase):
         with patch.object(tiku.requests, 'post', return_value=_json_response(payload)):
             self.assertEqual(tiku._search_wanneng('q', ['甲'], 0, {}), [['甲']] * 10)
 
+    def test_wanneng_rejects_non_integer_indexes(self):
+        payload = {'code': 0, 'result': {'success': True, 'answers': [1.5, True, '甲']}}
+        with patch.object(tiku.requests, 'post', return_value=_json_response(payload)):
+            self.assertEqual(tiku._search_wanneng('q', ['甲', '乙'], 0, {}), [['甲']] * 10)
+
     def test_tikuhai_retries_on_server_error(self):
         bad = Mock(status_code=500)
         bad.json.return_value = {}

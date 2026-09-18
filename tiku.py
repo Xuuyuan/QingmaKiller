@@ -151,10 +151,10 @@ def _search_wanneng(question, options, question_type, spec):  # 万能题库, �
         return []
     answers = []
     for value in data.get('answers') or []:
-        if isinstance(value, (int, float)):  # 数字答案为选项下标
+        if isinstance(value, int) and not isinstance(value, bool):  # 整数答案为选项下标
             if 0 <= int(value) < len(options):
                 answers.append(options[int(value)])
-        else:
+        elif isinstance(value, str):
             answers.append(str(value))
     return [answers] * 10 if answers else []  # 原实现重复10份, 使该源在多源投票中权重更高
 
