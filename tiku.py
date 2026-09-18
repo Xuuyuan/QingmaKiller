@@ -229,6 +229,9 @@ _SOURCE_CLIENTS = {
     'lemon': _search_lemon,
 }
 
+# 搜题会被逐题调用, 复用线程池避免每题反复创建和销毁线程。
+_SEARCH_EXECUTOR = ThreadPoolExecutor(max_workers=len(_SOURCE_CLIENTS))
+
 
 def _load_sources():  # 读取banks.json, 缺失按默认配置; 损坏时备份为.broken后按默认配置, 不中断运行
     config = {name: dict(defaults) for name, defaults in SOURCE_DEFAULTS.items()}
@@ -350,8 +353,7 @@ def search(question, question_type, options):  # 并发搜题: 整体不可用�
             logger.warning(f'题库源 {name} 搜索失败, 已跳过该源: {type(exc).__name__}')
             return name, [], False
 
-    with ThreadPoolExecutor(max_workers=len(workers)) as pool:
-        results = list(pool.map(_query, workers))
+    results = list(_SEARCH_EXECUTOR.map(_query, workers))
 
     answer_sets, hit_sources, failed = [], [], 0
     for name, sets, ok in results:
