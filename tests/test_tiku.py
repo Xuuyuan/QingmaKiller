@@ -265,6 +265,59 @@ class SearchContractTest(unittest.TestCase):
     def test_multi_choice_letters_follow_option_order(self):
         self.assertEqual(self.run_search({'x': lambda *args: [['乙', '甲']]}, question_type=1), 'AB')
 
+    def test_search_passes_options_and_type_to_real_clients(self):
+        payloads = {
+            'wanneng': {'code': 0, 'result': {'success': True, 'answers': [1]}},
+            'tikuhai': {'code': 200, 'data': {'answer': ['乙']}},
+        }
+        for name, payload in payloads.items():
+            with self.subTest(source=name), patch.object(
+                    tiku.requests, 'post', return_value=_json_response(payload)) as post:
+                result = self.run_search(
+                    {name: tiku._SOURCE_CLIENTS[name]},
+                    sources={name: {'enable': True}}, options=['甲', '乙'])
+                self.assertEqual(result, 'B')
+                self.assertEqual(post.call_args.kwargs['json']['options'], ['甲', '乙'])
+                self.assertEqual(post.call_args.kwargs['json']['type'], 0)
+
+    def test_malformed_source_does_not_discard_healthy_answer(self):
+        malformed = (None, 42, '乙', {'answer': ['乙']}, [42], ['乙'],
+                     [[42]], [[None]], [[True]], [[{}]], [[['乙']]])
+        for value in malformed:
+            with self.subTest(value=value):
+                clients = {'bad': lambda *args: value, 'good': lambda *args: [['乙']]}
+                sources = {name: {'enable': True} for name in clients}
+                self.assertEqual(self.run_search(clients, sources=sources), 'B')
+                self.assertIsNone(self.run_search({'x': lambda *args: value}))
+
+    def test_real_client_malformed_answer_is_isolated(self):
+        response = _json_response({'code': 200, 'data': {'answer': [42]}})
+        clients = {'tikuhai': tiku._search_tikuhai, 'good': lambda *args: [['乙']]}
+        sources = {name: {'enable': True} for name in clients}
+        with patch.object(tiku.requests, 'post', return_value=response):
+            self.assertEqual(self.run_search(clients, sources=sources), 'B')
+
+    def test_source_error_logs_do_not_expose_request_secrets(self):
+        token = 'FAKE_REVIEW_TOKEN'
+        cases = (
+            ('enncy', 'get', f'https://example.test/query?token={token}&title=private_question'),
+            ('wanneng', 'post', f'https://example.test/autoAnswer/{token}'),
+        )
+        for name, method, url in cases:
+            with self.subTest(source=name), patch.object(
+                    tiku.requests, method,
+                    side_effect=tiku.requests.ConnectionError(f'Max retries exceeded: {url}')), \
+                    patch.object(tiku.logger, 'warning') as warning:
+                self.assertIsNone(self.run_search(
+                    {name: tiku._SOURCE_CLIENTS[name]},
+                    sources={name: {'enable': True, 'token': token}}))
+                message = warning.call_args.args[0]
+                self.assertIn(name, message)
+                self.assertIn('ConnectionError', message)
+                self.assertNotIn(token, message)
+                self.assertNotIn(url, message)
+                self.assertNotIn('private_question', message)
+
 
 if __name__ == '__main__':
     unittest.main()

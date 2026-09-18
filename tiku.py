@@ -326,9 +326,17 @@ def search(question, question_type, options):  # 并发搜题: 整体不可用�
     def _query(worker):  # 单源搜题, 任何异常都降级为该源无结果, 不影响其余源
         name, client = worker
         try:
-            return name, client(question, question_type, options, sources[name]), True
+            sets = client(question, options, question_type, sources[name])
+            # 在单源异常边界内校验完整结构, 避免畸形答案进入公共聚合流程。
+            if not isinstance(sets, list) or any(
+                    not isinstance(answer_set, list)
+                    or any(not isinstance(answer, str) for answer in answer_set)
+                    for answer_set in sets):
+                raise TypeError('题库答案必须为字符串列表的列表')
+            return name, sets, True
         except Exception as exc:
-            logger.warning(f'题库源 {name} 搜索失败, 已跳过该源: {exc}')
+            # requests 异常文本可能包含带 token 的完整 URL, 仅记录异常类型。
+            logger.warning(f'题库源 {name} 搜索失败, 已跳过该源: {type(exc).__name__}')
             return name, [], False
 
     with ThreadPoolExecutor(max_workers=len(workers)) as pool:
