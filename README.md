@@ -63,7 +63,7 @@ pip install .
 
 ## 网络题库配置
 
-程序内置 7 个网络题库源，启动时并发搜题并对各源结果投票取最可能的答案。默认只启用 4 个免费源（不挂科、icodef、万能、题库海），付费源默认关闭。如需启用付费题库或填写对应 token，请在**程序同目录**创建 `banks.json`（发行包不携带此文件）：
+相关功能来自 [tikuAdapter](https://github.com/DokiDoki1103/tikuAdapter)。程序内置 7 个网络题库源，启动时并发搜题并对各源结果投票取最可能的答案。默认只启用 4 个免费源（不挂科、icodef、万能、题库海），付费源默认关闭。如需启用付费题库或填写对应 token，请在**程序同目录**创建 `banks.json`（发行包不携带此文件）：
 
 ```json
 {
@@ -84,7 +84,7 @@ pip install .
 - 各源 token/key 的获取渠道：
 
 | 源 | 官网 |
-|---|---|
+| --- | --- |
 | icodef | <https://q.icodef.com> |
 | 万能 wanneng | <https://lyck6.cn/pay> |
 | 题库海 tikuhai | <https://shop.tikuhai.com> |
