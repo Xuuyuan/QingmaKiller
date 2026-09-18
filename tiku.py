@@ -52,7 +52,7 @@ def _format_string(text):  # 文本归一化: 全角转半角、中文标点转�
     text = _full_to_half_width(text)
     for old, new in (('“', '"'), ('”', '"'), ('‘', "'"), ('’', "'"), ('。', '.'), ('&nbsp;', ' ')):
         text = text.replace(old, new)
-    return text.rstrip(',.?:!;').strip()
+    return text.strip().rstrip(',.?:!;').strip()
 
 
 _OPTION_PREFIX = re.compile(r'^[A-Z][.．:：、]\s?')
@@ -305,22 +305,25 @@ def _vote(answer_sets):  # 相同答案组合计数取众数, 平票取先出现
     return best_key.split(_ANSWER_SEP) if best_key is not None else []
 
 
-def _aggregate(answer_sets, options, question_type):  # 移植FillAnswerResponse: 投票选出最佳答案(选项文本列表, 可能为空)
+def _aggregate(answer_sets, options, question_type, winning_indices=None):  # 投票并可选记录支持胜出答案的候选下标
     norm_options = _format_options(options)
     normalized = [[_format_string(answer) for answer in answer_set] for answer_set in answer_sets]
     if not options:  # 无选项时只能对答案原文投票
         return _vote(normalized)
     need = 2 if question_type == 1 else 1  # 多选题至少命中两个选项才视为有效答案
-    exact_sets = []
-    for answer_set in normalized:
+    exact_sets, exact_indices = [], []
+    for index, answer_set in enumerate(normalized):
         exact = [option for option in norm_options if option in answer_set]
         if len(exact) >= need:
             exact_sets.append(exact)
+            exact_indices.append(index)
     best = _vote(exact_sets)
     if best:
+        if winning_indices is not None:
+            winning_indices.extend(index for index, candidate in zip(exact_indices, exact_sets) if candidate == best)
         return best
-    fuzzy_sets = []  # 精确匹配失败时的模糊兜底
-    for answer_set in normalized:
+    fuzzy_sets, fuzzy_indices = [], []  # 精确匹配失败时的模糊兜底
+    for index, answer_set in enumerate(normalized):
         if not answer_set:
             continue
         if question_type != 1:  # 单选: 取超过阈值且与答案整体最相似的选项
@@ -328,12 +331,17 @@ def _aggregate(answer_sets, options, question_type):  # 移植FillAnswerResponse
             best = max(norm_options, key=lambda option: _similarity(option, joined))
             if _similarity(best, joined) >= _SINGLE_FUZZY_SIMILARITY:
                 fuzzy_sets.append([best])
+                fuzzy_indices.append(index)
         else:
             matched = [option for option in norm_options
                        if any(_similarity(option, answer) >= _MULTI_FUZZY_SIMILARITY for answer in answer_set)]
             if len(matched) > 1:
                 fuzzy_sets.append(matched)
-    return _vote(fuzzy_sets)
+                fuzzy_indices.append(index)
+    best = _vote(fuzzy_sets)
+    if winning_indices is not None:
+        winning_indices.extend(index for index, candidate in zip(fuzzy_indices, fuzzy_sets) if candidate == best)
+    return best
 
 
 def _answer_letters(best, options):  # 最佳答案文本映射为选项字母串(移植fillAnswer), 无匹配时返回空串
@@ -372,21 +380,21 @@ def search(question, question_type, options):  # 并发搜题: 整体不可用�
 
     results = list(_SEARCH_EXECUTOR.map(_query, workers))
 
-    answer_sets, hit_sources, failed = [], [], 0
+    answer_sets, candidate_sources, failed = [], [], 0
     for name, sets, ok in results:
         if not ok:
             failed += 1
         for answer_set in sets:
             if answer_set:
                 answer_sets.append(answer_set)
-                if name not in hit_sources:
-                    hit_sources.append(name)
+                candidate_sources.append(name)
     if failed == len(workers):
         logger.error('所有网络题库源均不可用, 本题跳过! ')
         return None
     if not answer_sets:
         return ''
-    my_answer = _answer_letters(_aggregate(answer_sets, options, question_type), options)
+    winning_indices = []
+    my_answer = _answer_letters(_aggregate(answer_sets, options, question_type, winning_indices), options)
     if not my_answer:
         logger.warning('网络题库候选答案与本题选项不匹配, 本题跳过! ')
         return ''
@@ -396,5 +404,8 @@ def search(question, question_type, options):  # 并发搜题: 整体不可用�
         return ''
     if question_type == 1:  # 多选题答案按选项顺序去重
         my_answer = ''.join(sorted(set(my_answer)))
-    logger.info(f'网络题库命中({", ".join(hit_sources)}), 搜索结果: {my_answer}')
+    supporters = list(dict.fromkeys(candidate_sources[index] for index in winning_indices))
+    candidates = list(dict.fromkeys(candidate_sources))
+    logger.info(f'网络题库候选来源: {", ".join(candidates)}; '
+                f'胜出答案支持源: {", ".join(supporters)}; 搜索结果: {my_answer}')
     return my_answer

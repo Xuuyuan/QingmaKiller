@@ -301,6 +301,7 @@ class AggregateTest(unittest.TestCase):
         self.assertEqual(tiku._answer_letters(['不存在'], ['甲']), '')
 
     def test_format_helpers(self):
+        self.assertEqual(tiku._format_string(' 北京。 \n'), '北京')
         self.assertEqual(tiku._format_string('ａｂｃ，“北京”。'), 'abc,"北京"')
         self.assertEqual(tiku._format_options(['A. 甲', 'B．乙', 'C、丙']), ['甲', '乙', '丙'])
 
@@ -330,6 +331,27 @@ class SearchContractTest(unittest.TestCase):
 
     def test_no_answer_returns_empty_string(self):
         self.assertEqual(self.run_search({'x': lambda *args: []}), '')
+
+    def test_logs_distinguish_candidates_from_winning_sources(self):
+        cases = [([['苹果']], [['香蕉']], [['苹果']], 'A', 'first, third'),
+                 ([['平果']], [['无关文本']], [['平果']], 'A', 'first, third'),
+                 ([['苹果']], [['平果']], [['香蕉']], 'A', 'first')]
+        for first, second, third, expected, supporters in cases:
+            clients = {'first': lambda *args: first, 'second': lambda *args: second,
+                       'third': lambda *args: third}
+            with self.subTest(supporters=supporters), patch.object(tiku.logger, 'info') as info:
+                self.assertEqual(self.run_search(clients,
+                    sources={name: {'enable': True} for name in clients},
+                    options=['苹果', '香蕉']), expected)
+                message = info.call_args.args[0]
+                self.assertIn('候选来源: first, second, third;', message)
+                self.assertIn(f'胜出答案支持源: {supporters};', message)
+
+    def test_multi_choice_supporters_ignore_answer_order(self):
+        indices = []
+        self.assertEqual(tiku._aggregate([['乙', '甲'], ['甲', '乙'], ['甲', '丙']],
+                         ['甲', '乙', '丙'], 1, indices), ['甲', '乙'])
+        self.assertEqual(indices, [0, 1])
 
     def test_hit_returns_letters_and_single_choice_trims(self):
         self.assertEqual(self.run_search({'x': lambda *args: [['乙']]}), 'B')
