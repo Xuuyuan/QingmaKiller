@@ -45,6 +45,24 @@ class SourceConfigTest(unittest.TestCase):
         self.assertFalse(config['aidian']['enable'])
         self.assertFalse(config['lemon']['enable'])
 
+    def test_unreadable_config_uses_defaults(self):
+        with patch('builtins.open', side_effect=PermissionError):
+            self.assertEqual(tiku._load_sources(), tiku.SOURCE_DEFAULTS)
+
+    def test_invalid_encoding_is_backed_up(self):
+        with open(self.config_path, 'wb') as fp:
+            fp.write(b'\xff\xfe\xff')
+        self.assertEqual(tiku._load_sources(), tiku.SOURCE_DEFAULTS)
+        self.assertTrue(os.path.exists(self.config_path + '.broken'))
+
+    def test_invalid_credentials_are_ignored_without_logging_values(self):
+        self._write({'enncy': {'token': {'secret': 'PRIVATE'}}, 'tikuhai': {'key': 123}})
+        with patch.object(tiku.logger, 'warning') as warning:
+            config = tiku._load_sources()
+        self.assertEqual(config['enncy']['token'], '')
+        self.assertEqual(config['tikuhai']['key'], '')
+        self.assertNotIn('PRIVATE', str(warning.call_args_list))
+
     def test_broken_file_is_backed_up_and_defaults_used(self):
         with open(self.config_path, 'w', encoding='utf-8') as fp:
             fp.write('{broken json')
@@ -114,6 +132,19 @@ class BuguakeSearchTest(unittest.TestCase):
 
 class ClientProtocolTest(unittest.TestCase):
     """各题库源的请求构造与响应解析。"""
+
+    def test_exhausted_retries_sleep_only_between_attempts(self):
+        cases = [(tiku._search_icodef, '触发流控限制', 200, 1),
+                 (tiku._search_wanneng, '已限流,正在重新请求...', 200, 1),
+                 (tiku._search_tikuhai, 'error', 500, 2)]
+        for client, text, status, delay in cases:
+            response = _json_response({}, status)
+            response.text = text
+            with self.subTest(client=client.__name__), patch.object(tiku.requests, 'post',
+                    return_value=response) as post, patch.object(tiku.time, 'sleep') as sleep:
+                self.assertEqual(client('q', ['甲'], 0, {}), [])
+                self.assertEqual(post.call_count, 2)
+                sleep.assert_called_once_with(delay)
 
     def test_icodef_rejects_non_text_answers(self):
         for value in (42, True, ['甲'], {'answer': '甲'}, None):

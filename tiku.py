@@ -121,11 +121,12 @@ def _search_buguake(question, options, question_type, spec):  # 不挂科(百度
 
 def _search_icodef(question, options, question_type, spec):  # icodef题库, 触发流控时自动重试一次
     headers = {'Authorization': spec['token']} if spec.get('token') else {}
-    for _ in range(2):
+    for attempt in range(2):
         response = requests.post(icodef_api, data={'question': question}, headers=headers, timeout=5)
         if '触发流控限制' not in response.text or 'IP超出每日限额' in response.text:
             break
-        time.sleep(1)
+        if attempt == 0:
+            time.sleep(1)
     result = response.json()
     if result.get('code') != 1:
         return []
@@ -140,11 +141,12 @@ def _search_wanneng(question, options, question_type, spec):  # 万能题库, �
     url = wanneng_api.format(token) if token and len(token) == 10 else wanneng_free_api
     body = {'qid': '', 'plat': 0, 'question': question, 'options': options,
             'type': question_type, 'courseName': '', 'extra': ''}
-    for _ in range(2):
+    for attempt in range(2):
         response = requests.post(url, json=body, headers={'plat': '0'}, timeout=5)
         if '已限流,正在重新请求...' not in response.text:
             break
-        time.sleep(1)
+        if attempt == 0:
+            time.sleep(1)
     result = response.json()
     if result.get('code') != 0:
         return []
@@ -165,11 +167,12 @@ def _search_tikuhai(question, options, question_type, spec):  # 题库海题库,
     body = {'question': question, 'options': options, 'type': question_type,
             'key': spec.get('key', ''), 'questionData': ''}
     headers = {'User-Agent': 'tikuhaiAdapter/0.1.0', 'v': '0.1.0'}
-    for _ in range(2):
+    for attempt in range(2):
         response = requests.post(tikuhai_api, json=body, headers=headers, timeout=5)
         if response.status_code < 500:
             break
-        time.sleep(2)
+        if attempt == 0:
+            time.sleep(2)
     result = response.json()
     if result.get('code') != 200:
         return []
@@ -248,13 +251,16 @@ def _load_sources():  # 读取banks.json, 缺失按默认配置; 损坏时备份
             data = json.load(fp)
     except FileNotFoundError:
         return config
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, UnicodeError):
         broken_path = BANKS_FILE + '.broken'
         try:
             os.replace(BANKS_FILE, broken_path)
             logger.error(f'网络题库配置 {BANKS_FILE} 已损坏! 原文件备份为 {broken_path}, 本次按默认配置运行')
         except OSError:
             logger.error(f'网络题库配置 {BANKS_FILE} 已损坏且备份失败, 本次按默认配置运行')
+        return config
+    except OSError:
+        logger.warning('网络题库配置读取失败, 本次按默认配置运行')
         return config
     if not isinstance(data, dict):
         logger.error(f'网络题库配置 {BANKS_FILE} 结构异常, 本次按默认配置运行')
@@ -267,6 +273,9 @@ def _load_sources():  # 读取banks.json, 缺失按默认配置; 损坏时备份
                     continue
                 if key == 'enable' and not isinstance(value, bool):
                     logger.warning(f'网络题库配置 {name}.enable 必须为布尔值, 已忽略该配置')
+                    continue
+                if key in ('token', 'key') and not isinstance(value, str):
+                    logger.warning(f'网络题库配置 {name}.{key} 必须为字符串, 已忽略该配置')
                     continue
                 source[key] = value
     return config
