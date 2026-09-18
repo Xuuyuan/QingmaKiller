@@ -216,6 +216,16 @@ class AggregateTest(unittest.TestCase):
 
     def test_fuzzy_fallback_for_single_choice(self):
         self.assertEqual(tiku._aggregate([['平果']], ['苹果', '香蕉'], 0), ['苹果'])
+        self.assertEqual(tiku._aggregate([['完全无关的答案']], ['苹果', '香蕉'], 0), [])
+
+    def test_buguake_skips_malformed_candidates(self):
+        response = Mock(status_code=200)
+        response.json.return_value = {'data': {'list': [None, {'bdjson': 'valid', 'actk': ''}]}}
+        detail = {'que_stem': [{'c': [{'c': '中国的首都是哪里'}]}],
+                  'que_answer': [{'c': [{'c': '北京'}]}]}
+        with patch.object(tiku, '_buguake_decrypt', return_value=json.dumps(detail)), \
+                patch.object(tiku.requests, 'get', return_value=response):
+            self.assertEqual(tiku._search_buguake('中国的首都是哪里', [], 0, {}), [['北京']])
 
     def test_no_options_votes_on_raw_answers(self):
         self.assertEqual(tiku._aggregate([['甲'], ['甲'], ['乙']], [], 0), ['甲'])

@@ -30,7 +30,7 @@ SOURCE_DEFAULTS = {
 
 _ANSWER_SEP = '**=====^_^======^_^======**'  # 投票计数时组合答案的拼接分隔符(与tikuAdapter保持一致)
 _BUGUAKE_MIN_SIMILARITY = 0.8  # 不挂科候选题干的最低相似度(difflib与原实现算法不同, 命中率异常时可微调)
-_FUZZY_SIMILARITY = 0.7  # 多选题模糊匹配的最低相似度
+_FUZZY_SIMILARITY = 0.7  # 单选和多选题模糊匹配的最低相似度
 
 source_config = None  # 进程内缓存的题库源配置, 由 enabled_sources 首次调用时载入
 
@@ -103,6 +103,8 @@ def _search_buguake(question, options, question_type, spec):  # 不挂科(百度
     response = requests.get(buguake_api, params={'query': question, 'rn': '10', 'pn': '0'}, timeout=3)
     answer_sets = []
     for item in (_dig(response.json(), 'data', 'list') or []):
+        if not isinstance(item, dict):
+            continue
         try:
             detail = json.loads(_buguake_decrypt(item.get('bdjson', ''), item.get('actk', '')))
         except json.JSONDecodeError:
@@ -294,9 +296,11 @@ def _aggregate(answer_sets, options, question_type):  # 移植FillAnswerResponse
     for answer_set in normalized:
         if not answer_set:
             continue
-        if question_type != 1:  # 单选: 取与答案整体最相似的选项
+        if question_type != 1:  # 单选: 取超过阈值且与答案整体最相似的选项
             joined = ''.join(answer_set)
-            fuzzy_sets.append([max(norm_options, key=lambda option: _similarity(option, joined))])
+            best = max(norm_options, key=lambda option: _similarity(option, joined))
+            if _similarity(best, joined) >= _FUZZY_SIMILARITY:
+                fuzzy_sets.append([best])
         else:
             matched = [option for option in norm_options
                        if any(_similarity(option, answer) >= _FUZZY_SIMILARITY for answer in answer_set)]
