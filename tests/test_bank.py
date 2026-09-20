@@ -62,6 +62,24 @@ class LoadAndRecordTest(BankTestBase):
         question_bank.record('题目一', 'A. 甲 B. 乙', 'B')
         self.assertEqual(question_bank.questions['题目一'], 'A')
 
+    def test_loaded_normalized_duplicates_are_all_corrected(self):
+        data = {'version': 1, 'subjects': {'1': [
+            {'question': '题 目．一', 'answer': 'A'},
+            {'question': '题目一', 'answer': 'B'},
+            {'question': '其他题目', 'answer': 'A'},
+        ]}}
+        bank.save_bank(data)
+        question_bank = bank.QuestionBank(1)
+        self.assertEqual(question_bank.questions['题目一'], 'B')
+        question_bank.record('题目一', 'A. 甲 B. 乙 C. 丙', 'C', '丙')
+        reloaded = bank.QuestionBank(1)
+        self.assertEqual(reloaded.questions['题目一'], 'C')
+        for item in reloaded.question_list[:2]:
+            self.assertEqual(item['answer'], 'C')
+            self.assertEqual(item['options'], 'A. 甲 B. 乙 C. 丙')
+            self.assertEqual(item['answer_text'], '丙')
+        self.assertEqual(reloaded.question_list[2], data['subjects']['1'][2])
+
 
 class SubjectIsolationTest(BankTestBase):
     def test_same_question_in_different_subjects(self):

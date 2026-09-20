@@ -41,25 +41,31 @@ class QuestionBank:
         self.bank = load_bank()
         self.subject_key = str(subject_id)
         self.question_list = self.bank['subjects'].setdefault(self.subject_key, [])
-        # 加载科目题库到变量questions
-        self.questions = {text_format(q['question']): q['answer'] for q in self.question_list}
+        # 保留最后一条答案优先的行为, 并索引所有同题记录以便纠错。
+        self.questions = {}
+        self._question_records = {}
+        for item in self.question_list:
+            question = text_format(item['question'])
+            self.questions[question] = item['answer']
+            self._question_records.setdefault(question, []).append(item)
 
     def record(self, question, text_options, answer, right_answer=None):  # 新增题目, 或根据站点反馈纠正已有答案
         if question in self.questions:
             # 只有站点在答错后返回的正确答案才能修正已有记录。
             if right_answer is not None and answer and self.questions[question] != answer:
-                for item in self.question_list:
-                    if text_format(item['question']) == question:
-                        item.update(options=text_options, answer=answer, answer_text=right_answer)
+                for item in self._question_records.get(question, ()):
+                    item.update(options=text_options, answer=answer, answer_text=right_answer)
                 save_bank(self.bank)
                 self.questions[question] = answer
                 logger.info('已根据站点返回的正确答案修正本地题库')
             return
         self.questions[question] = answer
-        self.question_list.append({
+        item = {
             'question': question,
             'options': text_options,
             'answer': answer,
             'answer_text': right_answer,
-        })
+        }
+        self.question_list.append(item)
+        self._question_records.setdefault(text_format(question), []).append(item)
         save_bank(self.bank)
