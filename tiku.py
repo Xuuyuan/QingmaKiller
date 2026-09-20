@@ -351,7 +351,7 @@ def _answer_letters(best, options, *, norm_options=None):  # 最佳答案文本�
         norm_options = _format_options(options)
     letters = {}
     for index, option in enumerate(norm_options):
-        letters.setdefault(option, chr(65 + index))  # 重复选项仍取第一次出现的位置
+        letters.setdefault(option, chr(65 + index))
     return ''.join(letters.get(answer, '') for answer in best)
 
 
