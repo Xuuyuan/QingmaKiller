@@ -305,8 +305,9 @@ def _vote(answer_sets):  # 相同答案组合计数取众数, 平票取先出现
     return best_key.split(_ANSWER_SEP) if best_key is not None else []
 
 
-def _aggregate(answer_sets, options, question_type, winning_indices=None):  # 投票并可选记录支持胜出答案的候选下标
-    norm_options = _format_options(options)
+def _aggregate(answer_sets, options, question_type, winning_indices=None, *, norm_options=None):  # 投票并可选记录支持胜出答案的候选下标
+    if norm_options is None:
+        norm_options = _format_options(options)
     normalized = [[_format_string(answer) for answer in answer_set] for answer_set in answer_sets]
     if not options:  # 无选项时只能对答案原文投票
         return _vote(normalized)
@@ -328,8 +329,9 @@ def _aggregate(answer_sets, options, question_type, winning_indices=None):  # �
             continue
         if question_type != 1:  # 单选: 取超过阈值且与答案整体最相似的选项
             joined = ''.join(answer_set)
-            best = max(norm_options, key=lambda option: _similarity(option, joined))
-            if _similarity(best, joined) >= _SINGLE_FUZZY_SIMILARITY:
+            best, score = max(((option, _similarity(option, joined)) for option in norm_options),
+                              key=lambda candidate: candidate[1])
+            if score >= _SINGLE_FUZZY_SIMILARITY:
                 fuzzy_sets.append([best])
                 fuzzy_indices.append(index)
         else:
@@ -344,15 +346,13 @@ def _aggregate(answer_sets, options, question_type, winning_indices=None):  # �
     return best
 
 
-def _answer_letters(best, options):  # 最佳答案文本映射为选项字母串(移植fillAnswer), 无匹配时返回空串
-    norm_options = _format_options(options)
-    letters = []
-    for answer in best:
-        for index, option in enumerate(norm_options):
-            if option == answer:
-                letters.append(chr(65 + index))
-                break
-    return ''.join(letters)
+def _answer_letters(best, options, *, norm_options=None):  # 最佳答案文本映射为选项字母串(移植fillAnswer), 无匹配时返回空串
+    if norm_options is None:
+        norm_options = _format_options(options)
+    letters = {}
+    for index, option in enumerate(norm_options):
+        letters.setdefault(option, chr(65 + index))  # 重复选项仍取第一次出现的位置
+    return ''.join(letters.get(answer, '') for answer in best)
 
 
 def search(question, question_type, options):  # 并发搜题: 整体不可用返回None, 未命中返回空串, 命中返回选项字母串
@@ -394,7 +394,9 @@ def search(question, question_type, options):  # 并发搜题: 整体不可用�
     if not answer_sets:
         return ''
     winning_indices = []
-    my_answer = _answer_letters(_aggregate(answer_sets, options, question_type, winning_indices), options)
+    norm_options = _format_options(options)
+    best = _aggregate(answer_sets, options, question_type, winning_indices, norm_options=norm_options)
+    my_answer = _answer_letters(best, options, norm_options=norm_options)
     if not my_answer:
         logger.warning('网络题库候选答案与本题选项不匹配, 本题跳过! ')
         return ''

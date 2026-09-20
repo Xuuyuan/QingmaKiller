@@ -300,6 +300,14 @@ class AggregateTest(unittest.TestCase):
         self.assertEqual(tiku._answer_letters(['乙'], ['甲', '乙', '丙']), 'B')
         self.assertEqual(tiku._answer_letters(['不存在'], ['甲']), '')
 
+    def test_duplicate_options_map_to_first_letter(self):
+        self.assertEqual(tiku._answer_letters(['甲', '甲', '乙'], ['甲', '甲。', '乙']), 'AAC')
+
+    def test_fuzzy_tie_keeps_first_option_and_all_supporters(self):
+        indices = []
+        self.assertEqual(tiku._aggregate([['甲丙'], ['甲丁']], ['甲乙', '甲戊'], 0, indices), ['甲乙'])
+        self.assertEqual(indices, [0, 1])
+
     def test_format_helpers(self):
         self.assertEqual(tiku._format_string(' 北京。 \n'), '北京')
         self.assertEqual(tiku._format_string('ａｂｃ，“北京”。'), 'abc,"北京"')
